@@ -1,4 +1,5 @@
 <img src="https://rawgit.com/mvader/flamingo/master/flamingo.png" width="400" height="200" />
+
 [![godoc reference](https://godoc.org/github.com/mvader/flamingo?status.png)](https://godoc.org/github.com/mvader/flamingo)
 Flamingo is a very thin and simple bot framework layer on top of [nlopes/slack](https://github.com/nlopes/slack) Slack API.
 
