@@ -66,7 +66,7 @@ func (b *bot) Say(msg flamingo.OutgoingMessage) error {
 		channel = msg.ChannelID
 	}
 
-	params, err := createPostParams(msg)
+	params, err := createPostParams(b.id, channel, msg)
 	if err != nil {
 		return err
 	}

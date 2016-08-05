@@ -82,7 +82,7 @@ func parseTimestamp(timestamp string) time.Time {
 	return time.Unix(sec, nsec)
 }
 
-func createPostParams(msg flamingo.OutgoingMessage) (slack.PostMessageParameters, error) {
+func createPostParams(botID, channelID string, msg flamingo.OutgoingMessage) (slack.PostMessageParameters, error) {
 	params := slack.PostMessageParameters{
 		LinkNames: 1,
 		Markdown:  true,
@@ -101,15 +101,59 @@ func createPostParams(msg flamingo.OutgoingMessage) (slack.PostMessageParameters
 				return params, fmt.Errorf("attachment %#v is not of type slack.Attachment", att)
 			}
 
-			params.Attachments = append(params.Attachments, toSlackAttachment(slackAtt))
+			params.Attachments = append(params.Attachments, toSlackAttachment(botID, channelID, slackAtt))
 		}
 	}
 
 	return params, nil
 }
 
-func toSlackAttachment(attachment Attachment) slack.Attachment {
-	return slack.Attachment{}
+func toSlackAttachment(botID, channelID string, attachment Attachment) slack.Attachment {
+	a := slack.Attachment{
+		CallbackID:    fmt.Sprintf("%s::%s::%s", botID, channelID, attachment.ID),
+		Color:         attachment.Color,
+		AuthorName:    attachment.AuthorName,
+		AuthorSubname: attachment.AuthorSubname,
+		AuthorLink:    attachment.AuthorLink,
+		AuthorIcon:    attachment.AuthorIcon,
+		Title:         attachment.Title,
+		TitleLink:     attachment.TitleLink,
+		Pretext:       attachment.Pretext,
+		Text:          attachment.Text,
+		ImageURL:      attachment.ImageURL,
+		ThumbURL:      attachment.ThumbURL,
+		Footer:        attachment.Footer,
+		FooterIcon:    attachment.FooterIcon,
+		MarkdownIn:    attachment.MarkdownIn,
+	}
+
+	for _, f := range attachment.Fields {
+		a.Fields = append(a.Fields, slack.AttachmentField{
+			Title: f.Title,
+			Value: f.Value,
+			Short: f.Short,
+		})
+	}
+
+	for _, action := range attachment.Actions {
+		act := slack.AttachmentAction{
+			Name:  action.Name,
+			Text:  action.Text,
+			Value: action.Value,
+			Style: action.Style,
+		}
+
+		for _, c := range action.Confirm {
+			act.Confirm = append(act.Confirm, slack.ConfirmationField{
+				Title:       c.Title,
+				Text:        c.Text,
+				OkText:      c.OkText,
+				DismissText: c.DismissText,
+			})
+		}
+	}
+
+	return a
 }
 
 func convertAttachment(attachment slack.Attachment) flamingo.Attachment {
@@ -119,6 +163,7 @@ func convertAttachment(attachment slack.Attachment) flamingo.Attachment {
 		AuthorSubname: attachment.AuthorSubname,
 		AuthorLink:    attachment.AuthorLink,
 		AuthorIcon:    attachment.AuthorIcon,
+		ID:            attachment.CallbackID,
 		Title:         attachment.Title,
 		TitleLink:     attachment.TitleLink,
 		Pretext:       attachment.Pretext,
