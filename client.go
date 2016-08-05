@@ -4,6 +4,8 @@ import "io"
 
 type Client interface {
 	SetLogOutput(io.Writer)
+	AddController(Controller)
+	AddActionHandler(string, ActionHandler)
 	Run() error
 }
 

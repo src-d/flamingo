@@ -1,10 +1,25 @@
 package flamingo
 
+import "time"
+
 type OutgoingMessage struct {
 	ChannelID   string
 	Text        string
 	Sender      *MessageSender
 	Attachments []Attachment
+}
+
+func NewOutgoingMessage(text string) OutgoingMessage {
+	return OutgoingMessage{Text: text}
+}
+
+type MessageSender struct {
+	Username string
+	IconURL  string
+}
+
+type attachment struct {
+	byClient map[ClientType]interface{}
 }
 
 func NewAttachment() Attachment {
@@ -20,8 +35,8 @@ type Attachment interface {
 }
 
 func (a *attachment) ForClient(client ClientType) (interface{}, bool) {
-	a, ok := a.byClient[client]
-	return a, ok
+	att, ok := a.byClient[client]
+	return att, ok
 }
 
 func (a *attachment) Add(client ClientType, attachment interface{}) Attachment {
@@ -42,13 +57,13 @@ type Message struct {
 	Type        ClientType
 	User        User
 	Channel     Channel
-	Time        Time
+	Time        time.Time
 	Attachments []Attachment
 	Text        string
 	Extra       interface{}
 }
 
-type Conversation []Message
+type Conversation []OutgoingMessage
 
 type User struct {
 	ID       string
