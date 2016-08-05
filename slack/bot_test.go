@@ -107,7 +107,8 @@ func TestAsk(t *testing.T) {
 
 	ch <- &slack.MessageEvent{
 		Msg: slack.Msg{
-			Text: "fine, thanks",
+			Text:        "fine, thanks",
+			Attachments: []slack.Attachment{slack.Attachment{}},
 		},
 	}
 
@@ -167,7 +168,7 @@ func TestWaitForActionIgnorePolicy(t *testing.T) {
 
 	ch <- &slack.MessageEvent{
 		Msg: slack.Msg{
-			Text: "fine, thanks. And you?",
+			Text: "some msg",
 		},
 	}
 
@@ -204,12 +205,12 @@ func TestWaitForActionReplyPolicy(t *testing.T) {
 
 	ch <- &slack.MessageEvent{
 		Msg: slack.Msg{
-			Text: "fine, thanks. And you?",
+			Text: "some msg",
 		},
 	}
 
 	go func() {
-		<-time.After(50 * time.Millisecond)
+		<-time.After(150 * time.Millisecond)
 		actions <- slack.AttachmentActionCallback{
 			CallbackID: "bar",
 		}

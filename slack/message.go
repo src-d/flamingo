@@ -141,6 +141,7 @@ func toSlackAttachment(botID, channelID string, attachment Attachment) slack.Att
 			Text:  action.Text,
 			Value: action.Value,
 			Style: action.Style,
+			Type:  "button",
 		}
 
 		for _, c := range action.Confirm {
@@ -151,6 +152,7 @@ func toSlackAttachment(botID, channelID string, attachment Attachment) slack.Att
 				DismissText: c.DismissText,
 			})
 		}
+		a.Actions = append(a.Actions, act)
 	}
 
 	return a
@@ -199,6 +201,7 @@ func convertAttachment(attachment slack.Attachment) flamingo.Attachment {
 				DismissText: c.DismissText,
 			})
 		}
+		a.Actions = append(a.Actions, act)
 	}
 
 	return flamingo.NewAttachment().Add(flamingo.SlackClient, a)
