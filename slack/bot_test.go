@@ -3,6 +3,7 @@ package slack
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/mvader/flamingo"
 	"github.com/nlopes/slack"
@@ -113,4 +114,120 @@ func TestAsk(t *testing.T) {
 	msg, err := bot.Ask(flamingo.NewOutgoingMessage("how are you?"))
 	assert.Nil(err)
 	assert.Equal(msg.Text, "fine, thanks")
+}
+
+func TestConversation(t *testing.T) {
+	assert := assert.New(t)
+	mock := newPosterMock(nil)
+	ch := make(chan *slack.MessageEvent, 2)
+	bot := &bot{
+		poster: mock,
+		channel: flamingo.Channel{
+			ID: "foo",
+		},
+		msgs: ch,
+	}
+
+	ch <- &slack.MessageEvent{
+		Msg: slack.Msg{
+			Text: "fine, thanks. And you?",
+		},
+	}
+
+	ch <- &slack.MessageEvent{
+		Msg: slack.Msg{
+			Text: "cool",
+		},
+	}
+
+	msgs, err := bot.Conversation(flamingo.Conversation{
+		flamingo.NewOutgoingMessage("hi, how are you?"),
+		flamingo.NewOutgoingMessage("fine, too"),
+	})
+	assert.Nil(err)
+	assert.Equal(len(msgs), 2)
+
+	assert.Equal(msgs[0].Text, "fine, thanks. And you?")
+	assert.Equal(msgs[1].Text, "cool")
+}
+
+func TestWaitForActionIgnorePolicy(t *testing.T) {
+	assert := assert.New(t)
+	mock := newPosterMock(nil)
+	ch := make(chan *slack.MessageEvent, 1)
+	actions := make(chan slack.AttachmentActionCallback, 1)
+	bot := &bot{
+		poster: mock,
+		channel: flamingo.Channel{
+			ID: "foo",
+		},
+		msgs:    ch,
+		actions: actions,
+	}
+
+	ch <- &slack.MessageEvent{
+		Msg: slack.Msg{
+			Text: "fine, thanks. And you?",
+		},
+	}
+
+	go func() {
+		<-time.After(50 * time.Millisecond)
+		actions <- slack.AttachmentActionCallback{
+			CallbackID: "bar",
+		}
+
+		actions <- slack.AttachmentActionCallback{
+			CallbackID: "foo",
+		}
+	}()
+
+	action, err := bot.WaitForAction("foo", flamingo.IgnorePolicy())
+	assert.Nil(err)
+	assert.Equal(action.Extra.(slack.AttachmentActionCallback).CallbackID, "foo")
+	assert.Equal(len(mock.msgs), 0)
+}
+
+func TestWaitForActionReplyPolicy(t *testing.T) {
+	assert := assert.New(t)
+	mock := newPosterMock(nil)
+	ch := make(chan *slack.MessageEvent, 1)
+	actions := make(chan slack.AttachmentActionCallback, 1)
+	bot := &bot{
+		poster: mock,
+		channel: flamingo.Channel{
+			ID: "foo",
+		},
+		msgs:    ch,
+		actions: actions,
+	}
+
+	ch <- &slack.MessageEvent{
+		Msg: slack.Msg{
+			Text: "fine, thanks. And you?",
+		},
+	}
+
+	go func() {
+		<-time.After(50 * time.Millisecond)
+		actions <- slack.AttachmentActionCallback{
+			CallbackID: "bar",
+		}
+
+		actions <- slack.AttachmentActionCallback{
+			CallbackID: "foo",
+			Actions: []slack.AttachmentAction{
+				slack.AttachmentAction{
+					Name:  "foo",
+					Value: "foo-1",
+				},
+			},
+		}
+	}()
+
+	action, err := bot.WaitForAction("foo", flamingo.ReplyPolicy("wait, what?"))
+	assert.Nil(err)
+	assert.Equal(action.UserAction.Value, "foo-1")
+	assert.Equal(action.Extra.(slack.AttachmentActionCallback).CallbackID, "foo")
+	assert.Equal(len(mock.msgs), 2)
 }

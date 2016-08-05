@@ -87,7 +87,14 @@ func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (fla
 					return flamingo.Action{}, err
 				}
 			}
-		case <-time.After(300 * time.Millisecond):
+		case <-b.msgs:
+			if policy.Reply {
+				err := b.Say(flamingo.NewOutgoingMessage(policy.Message))
+				if err != nil {
+					return flamingo.Action{}, err
+				}
+			}
+		case <-time.After(100 * time.Millisecond):
 		}
 	}
 }
@@ -103,7 +110,7 @@ func (b *bot) convertMessage(src *slack.MessageEvent) (flamingo.Message, error) 
 		return flamingo.Message{}, err
 	}
 
-	return newMessage(user, b.channel, src), nil
+	return newMessage(user, b.channel, src.Msg), nil
 }
 
 func (b *bot) findUser(id string) (flamingo.User, error) {

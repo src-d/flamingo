@@ -55,9 +55,9 @@ type Confirmation struct {
 	DismissText string
 }
 
-func newMessage(user flamingo.User, channel flamingo.Channel, src *slack.MessageEvent) flamingo.Message {
-	var attachments = make([]flamingo.Attachment, 0, len(src.Msg.Attachments))
-	for _, a := range src.Msg.Attachments {
+func newMessage(user flamingo.User, channel flamingo.Channel, src slack.Msg) flamingo.Message {
+	var attachments = make([]flamingo.Attachment, 0, len(src.Attachments))
+	for _, a := range src.Attachments {
 		attachments = append(attachments, convertAttachment(a))
 	}
 
@@ -65,10 +65,10 @@ func newMessage(user flamingo.User, channel flamingo.Channel, src *slack.Message
 		User:        user,
 		Type:        flamingo.SlackClient,
 		Channel:     channel,
-		Text:        src.Msg.Text,
-		Time:        parseTimestamp(src.Msg.Timestamp),
+		Text:        src.Text,
+		Time:        parseTimestamp(src.Timestamp),
 		Attachments: attachments,
-		Extra:       src.Msg,
+		Extra:       src,
 	}
 }
 

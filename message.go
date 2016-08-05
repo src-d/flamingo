@@ -13,6 +13,11 @@ func NewOutgoingMessage(text string) OutgoingMessage {
 	return OutgoingMessage{Text: text}
 }
 
+func (m *OutgoingMessage) AddAttachment(client ClientType, att interface{}) *OutgoingMessage {
+	m.Attachments = append(m.Attachments, NewAttachment().Add(client, att))
+	return m
+}
+
 type MessageSender struct {
 	Username string
 	IconURL  string
