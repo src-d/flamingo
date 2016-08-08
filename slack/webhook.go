@@ -16,7 +16,7 @@ type WebhookService struct {
 func NewWebhookService(token string) *WebhookService {
 	return &WebhookService{
 		Token:     token,
-		callbacks: make(chan slack.AttachmentActionCallback),
+		callbacks: make(chan slack.AttachmentActionCallback, 1),
 	}
 }
 

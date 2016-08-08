@@ -99,6 +99,5 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 
 	case *slack.InvalidAuthEvent:
 		log.Fatalf("Invalid credentials for bot %q", c.id)
-		return
 	}
 }
