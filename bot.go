@@ -6,5 +6,6 @@ type Bot interface {
 	Ask(OutgoingMessage) (Message, error)
 	Conversation(Conversation) ([]Message, error)
 	Say(OutgoingMessage) error
+	Form(Form) error
 	WaitForAction(string, ActionWaitingPolicy) (Action, error)
 }

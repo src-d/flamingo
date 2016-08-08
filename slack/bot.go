@@ -100,6 +100,11 @@ func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (fla
 	}
 }
 
+func (b *bot) Form(form flamingo.Form) error {
+	// TODO: Implement
+	return nil
+}
+
 func (b *bot) convertMessage(src *slack.MessageEvent) (flamingo.Message, error) {
 	var userID = src.Msg.User
 	if userID == "" {
