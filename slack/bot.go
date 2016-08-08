@@ -11,6 +11,7 @@ import (
 type messagePoster interface {
 	PostMessage(string, string, slack.PostMessageParameters) (string, string, error)
 	GetUserInfo(string) (*slack.User, error)
+	GetChannelInfo(string) (*slack.Channel, error)
 }
 
 type bot struct {

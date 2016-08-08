@@ -41,6 +41,13 @@ func (m *posterMock) GetUserInfo(id string) (*slack.User, error) {
 	}, nil
 }
 
+func (m *posterMock) GetChannelInfo(id string) (*slack.Channel, error) {
+	ch := &slack.Channel{}
+	ch.ID = id
+	ch.Name = "channel"
+	return ch, nil
+}
+
 func newPosterMock(callback func(postMessageArgs) bool) *posterMock {
 	return &posterMock{
 		callback: callback,
