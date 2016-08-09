@@ -1,9 +1,10 @@
 package slack
 
 import (
-	"log"
 	"sync"
 	"time"
+
+	"gopkg.in/inconshreveable/log15.v2"
 
 	"github.com/mvader/flamingo"
 	"github.com/nlopes/slack"
@@ -35,7 +36,10 @@ type botClient struct {
 	delegate      handlerDelegate
 }
 
-func newBotClient(id string, client *slack.Client, delegate handlerDelegate) *botClient {
+func newBotClient(id, token string, delegate handlerDelegate) *botClient {
+	client := slack.New(token)
+	client.SetDebug(false)
+
 	cli := &botClient{
 		id:            id,
 		rtm:           &slackRTMWrapper{client.NewRTM()},
@@ -63,7 +67,7 @@ func (c *botClient) handleAction(channel string, action slack.AttachmentActionCa
 
 	conv, ok := c.conversations[channel]
 	if !ok {
-		log.Printf("conversation with id %q not found in bot %q", channel, c.id)
+		log15.Warn("conversation not found in bot", "channel", channel, "id", c.id)
 		return
 	}
 
@@ -78,10 +82,11 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 	case *slack.MessageEvent:
 		conv, ok := c.conversations[evt.Channel]
 		if !ok {
-			log.Printf("conversation %q does not exist for bot %q, creating", evt.Channel, c.id)
-			conv, err := newBotConversation(c.id, evt.Channel, c.rtm, c.delegate)
+			log15.Debug("conversation does not exist for bot, creating", "channel", evt.Channel, "bot", c.id)
+			var err error
+			conv, err = newBotConversation(c.id, evt.Channel, c.rtm, c.delegate)
 			if err != nil {
-				log.Printf("unable to create conversation %q for bot %q: %q", evt.Channel, c.id, err.Error())
+				log15.Error("unable to create conversation for bot", "channel", evt.Channel, "bot", c.id, "error", err.Error())
 				return
 			}
 
@@ -89,15 +94,15 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 			go conv.run()
 		}
 
-		log.Printf("message for channel %q: %s", evt.Channel, evt.Text)
+		log15.Debug("message for channel", "channel", evt.Channel, "text", evt.Text)
 		conv.messages <- evt
 	case *slack.LatencyReport:
-		log.Printf("Current latency: %v", evt.Value)
+		log15.Info("Current latency", "latency", evt.Value)
 
 	case *slack.RTMError:
-		log.Printf("Real Time Error: %q", evt.Error())
+		log15.Error("Real Time Error", "error", evt.Error())
 
 	case *slack.InvalidAuthEvent:
-		log.Fatalf("Invalid credentials for bot %q", c.id)
+		log15.Crit("Invalid credentials for bot", "bot", c.id)
 	}
 }

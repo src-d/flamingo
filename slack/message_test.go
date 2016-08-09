@@ -17,8 +17,7 @@ func TestCreatePostParams(t *testing.T) {
 		IconURL:  "bar",
 	}
 
-	params, err := createPostParams(msg)
-	assert.Nil(err)
+	params := createPostParams(msg)
 	assert.Equal(params.IconURL, "bar")
 	assert.Equal(params.Username, "foo")
 }

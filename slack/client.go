@@ -4,9 +4,12 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 	"sync"
 	"time"
+
+	"gopkg.in/inconshreveable/log15.v2"
 
 	"github.com/mvader/flamingo"
 	"github.com/nlopes/slack"
@@ -15,6 +18,7 @@ import (
 type ClientOptions struct {
 	EnableWebhook bool
 	WebhookAddr   string
+	Debug         bool
 }
 
 type slackClient struct {
@@ -38,6 +42,20 @@ func NewClient(token string, options ClientOptions) flamingo.Client {
 }
 
 func (c *slackClient) SetLogOutput(w io.Writer) {
+	var nilWriter io.Writer
+
+	var format = log15.LogfmtFormat()
+	if w == nilWriter || w == nil {
+		w = os.Stdout
+		format = log15.TerminalFormat()
+	}
+
+	var maxLvl = log15.LvlInfo
+	if c.options.Debug {
+		maxLvl = log15.LvlDebug
+	}
+
+	log15.Root().SetHandler(log15.LvlFilterHandler(maxLvl, log15.StreamHandler(w, format)))
 }
 
 func (c *slackClient) AddController(ctrl flamingo.Controller) {
@@ -45,6 +63,7 @@ func (c *slackClient) AddController(ctrl flamingo.Controller) {
 }
 
 func (c *slackClient) AddActionHandler(id string, handler flamingo.ActionHandler) {
+	log15.Debug("added action handler", "id", id)
 	c.actionHandlers[id] = handler
 }
 
@@ -69,6 +88,13 @@ func (c *slackClient) ActionHandler(id string) (flamingo.ActionHandler, bool) {
 	return handler, ok
 }
 
+func (c *slackClient) AddBot(id, token string) {
+	c.Lock()
+	defer c.Unlock()
+
+	c.bots[id] = newBotClient(id, token, c)
+}
+
 func (c *slackClient) runWebhook() {
 	srv := http.Server{
 		ReadTimeout:  1 * time.Second,
@@ -81,7 +107,9 @@ func (c *slackClient) runWebhook() {
 }
 
 func (c *slackClient) Run() error {
+	log15.Info("Starting flamingo slack client")
 	if c.options.EnableWebhook {
+		log15.Info("Starting webhook server endpoint")
 		go c.runWebhook()
 	}
 
@@ -89,9 +117,10 @@ func (c *slackClient) Run() error {
 	for {
 		select {
 		case action := <-actions:
+			log15.Debug("action received", "callback", action.CallbackID)
 			go c.handleActionCallback(action)
 
-		case <-time.After(200 * time.Millisecond):
+		case <-time.After(50 * time.Millisecond):
 		}
 	}
 }

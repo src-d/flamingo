@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"gopkg.in/inconshreveable/log15.v2"
+
 	"github.com/mvader/flamingo"
 	"github.com/nlopes/slack"
 )
@@ -67,12 +69,16 @@ func (b *bot) Say(msg flamingo.OutgoingMessage) error {
 		channel = msg.ChannelID
 	}
 
-	params, err := createPostParams(msg)
+	_, _, err := b.api.PostMessage(channel, msg.Text, createPostParams(msg))
 	if err != nil {
-		return err
+		log15.Error(
+			"error posting message to channel",
+			"channel", channel,
+			"error", err.Error(),
+			"text", msg.Text,
+		)
 	}
 
-	_, _, err = b.api.PostMessage(channel, msg.Text, params)
 	return err
 }
 
@@ -83,13 +89,15 @@ func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (fla
 			if action.CallbackID == id {
 				return convertAction(action), nil
 			} else if policy.Reply {
+				log15.Debug("received action with another id waiting for action", "id", action.CallbackID)
 				err := b.Say(flamingo.NewOutgoingMessage(policy.Message))
 				if err != nil {
 					return flamingo.Action{}, err
 				}
 			}
-		case <-b.msgs:
+		case m := <-b.msgs:
 			if policy.Reply {
+				log15.Debug("received msg waiting for action, replying default msg", "text", m.Text)
 				err := b.Say(flamingo.NewOutgoingMessage(policy.Message))
 				if err != nil {
 					return flamingo.Action{}, err
@@ -103,6 +111,10 @@ func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (fla
 func (b *bot) Form(form flamingo.Form) error {
 	params := formToMessage(b.ID(), b.channel.ID, form)
 	_, _, err := b.api.PostMessage(b.channel.ID, " ", params)
+	if err != nil {
+		log15.Error("error posting form", "err", err.Error())
+	}
+
 	return err
 }
 
@@ -123,6 +135,7 @@ func (b *bot) convertMessage(src *slack.MessageEvent) (flamingo.Message, error) 
 func (b *bot) findUser(id string) (flamingo.User, error) {
 	user, err := b.api.GetUserInfo(id)
 	if err != nil {
+		log15.Error("unable to find user", "id", id)
 		return flamingo.User{}, err
 	}
 

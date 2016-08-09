@@ -1,8 +1,9 @@
 package slack
 
 import (
-	"log"
 	"time"
+
+	"gopkg.in/inconshreveable/log15.v2"
 
 	"github.com/mvader/flamingo"
 	"github.com/nlopes/slack"
@@ -45,24 +46,24 @@ func (c *botConversation) run() {
 		case msg := <-c.messages:
 			message, err := c.convertMessage(msg)
 			if err != nil {
-				log.Printf("error converting message: %q", err.Error())
+				log15.Error("error converting message", "err", err.Error())
 				continue
 			}
 
 			ctrl, ok := c.delegate.ControllerFor(message)
 			if !ok {
-				log.Printf("no controller for message %q", message.Text)
+				log15.Warn("no controller for message", "text", message.Text)
 				continue
 			}
 
 			if err := ctrl.Handle(c.createBot(), message); err != nil {
-				log.Printf("error handling message: %q", err.Error())
+				log15.Error("error handling message", "error", err.Error())
 			}
 
 		case action := <-c.actions:
 			handler, ok := c.delegate.ActionHandler(action.CallbackID)
 			if !ok {
-				log.Printf("no handler for callback %q", action.CallbackID)
+				log15.Warn("no handler for callback", "id", action.CallbackID)
 				continue
 			}
 
@@ -90,6 +91,7 @@ func (c *botConversation) convertMessage(src *slack.MessageEvent) (flamingo.Mess
 
 	user, err := c.rtm.GetUserInfo(userID)
 	if err != nil {
+		log15.Error("unable to find user", "id", userID)
 		return flamingo.Message{}, err
 	}
 

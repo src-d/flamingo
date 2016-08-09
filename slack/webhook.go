@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"gopkg.in/inconshreveable/log15.v2"
+
 	"github.com/nlopes/slack"
 )
 
@@ -33,6 +35,7 @@ func (s *WebhookService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if callback.Token != s.Token {
+		log15.Warn("received action callback token does not match", "token", callback.Token)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}

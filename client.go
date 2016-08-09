@@ -6,6 +6,7 @@ type Client interface {
 	SetLogOutput(io.Writer)
 	AddController(Controller)
 	AddActionHandler(string, ActionHandler)
+	AddBot(string, string)
 	Run() error
 }
 

@@ -30,7 +30,7 @@ func parseTimestamp(timestamp string) time.Time {
 	return time.Unix(sec, nsec)
 }
 
-func createPostParams(msg flamingo.OutgoingMessage) (slack.PostMessageParameters, error) {
+func createPostParams(msg flamingo.OutgoingMessage) slack.PostMessageParameters {
 	params := slack.PostMessageParameters{
 		LinkNames: 1,
 		Markdown:  true,
@@ -42,5 +42,5 @@ func createPostParams(msg flamingo.OutgoingMessage) (slack.PostMessageParameters
 		params.Username = msg.Sender.Username
 	}
 
-	return params, nil
+	return params
 }
