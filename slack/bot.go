@@ -67,7 +67,7 @@ func (b *bot) Say(msg flamingo.OutgoingMessage) error {
 		channel = msg.ChannelID
 	}
 
-	params, err := createPostParams(b.id, channel, msg)
+	params, err := createPostParams(msg)
 	if err != nil {
 		return err
 	}
@@ -101,8 +101,9 @@ func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (fla
 }
 
 func (b *bot) Form(form flamingo.Form) error {
-	// TODO: Implement
-	return nil
+	params := formToMessage(b.ID(), b.channel.ID, form)
+	_, _, err := b.poster.PostMessage(b.channel.ID, " ", params)
+	return err
 }
 
 func (b *bot) convertMessage(src *slack.MessageEvent) (flamingo.Message, error) {

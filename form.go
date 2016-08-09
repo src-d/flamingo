@@ -1,10 +1,11 @@
 package flamingo
 
 type Form struct {
-	Title    string
-	ID       string
-	Subtitle string
-	Fields   []FieldGroup
+	Title   string
+	Text    string
+	Combine bool
+	Color   string
+	Fields  []FieldGroup
 }
 
 type Field interface {
@@ -12,10 +13,21 @@ type Field interface {
 }
 
 type FieldGroup interface {
+	ID() string
 	Items() []Field
+	Type() FieldGroupType
 }
 
+type FieldGroupType byte
+
+const (
+	ButtonGroup FieldGroupType = 1 << iota
+	TextFieldGroup
+)
+
 type fieldGroup struct {
+	kind  FieldGroupType
+	id    string
 	items []Field
 }
 
@@ -23,12 +35,22 @@ func (g *fieldGroup) Items() []Field {
 	return g.items
 }
 
-func NewButtonGroup(buttons ...Button) FieldGroup {
+func (g *fieldGroup) ID() string {
+	return g.id
+}
+
+func (g *fieldGroup) Type() FieldGroupType {
+	return g.kind
+}
+
+func NewButtonGroup(id string, buttons ...Button) FieldGroup {
 	var items []Field
 	for _, b := range buttons {
 		items = append(items, b)
 	}
 	return &fieldGroup{
+		kind:  ButtonGroup,
+		id:    id,
 		items: items,
 	}
 }
@@ -39,6 +61,7 @@ func NewTextFieldGroup(fields ...TextField) FieldGroup {
 		items = append(items, f)
 	}
 	return &fieldGroup{
+		kind:  TextFieldGroup,
 		items: items,
 	}
 }

@@ -239,3 +239,39 @@ func TestWaitForActionReplyPolicy(t *testing.T) {
 	assert.Equal(action.Extra.(slack.AttachmentActionCallback).CallbackID, "foo")
 	assert.Equal(len(mock.msgs), 2)
 }
+
+func TestForm(t *testing.T) {
+	assert := assert.New(t)
+	mock := newPosterMock(nil)
+	bot := &bot{
+		id:     "bar",
+		poster: mock,
+		channel: flamingo.Channel{
+			ID: "foo",
+		},
+	}
+
+	assert.Nil(bot.Form(flamingo.Form{
+		Title:   "title",
+		Text:    "text",
+		Color:   "color",
+		Combine: true,
+		Fields: []flamingo.FieldGroup{
+			flamingo.NewButtonGroup("baz", flamingo.Button{
+				Name:  "yes",
+				Value: "yes",
+				Text:  "Yes",
+				Type:  flamingo.PrimaryButton,
+			}),
+			flamingo.NewTextFieldGroup(flamingo.TextField{
+				Title: "title",
+				Value: "value",
+			}),
+		},
+	}))
+
+	assert.Equal(len(mock.msgs), 1)
+	assert.Equal(mock.msgs[0].channel, "foo")
+	assert.Equal(mock.msgs[0].text, " ")
+	assert.Equal(len(mock.msgs[0].params.Attachments), 1)
+}
