@@ -32,6 +32,8 @@ type botClient struct {
 	id string
 	sync.RWMutex
 	rtm           slackRTM
+	shutdown      chan struct{}
+	closed        chan struct{}
 	conversations map[string]*botConversation
 	delegate      handlerDelegate
 }
@@ -43,6 +45,8 @@ func newBotClient(id, token string, delegate handlerDelegate) *botClient {
 	cli := &botClient{
 		id:            id,
 		rtm:           &slackRTMWrapper{client.NewRTM()},
+		shutdown:      make(chan struct{}, 1),
+		closed:        make(chan struct{}, 1),
 		conversations: make(map[string]*botConversation),
 		delegate:      delegate,
 	}
@@ -54,6 +58,14 @@ func newBotClient(id, token string, delegate handlerDelegate) *botClient {
 func (c *botClient) runRTM() {
 	for {
 		select {
+		case <-c.shutdown:
+			for id, convo := range c.conversations {
+				log15.Debug("shutting down conversation", "channel", id)
+				convo.shutdown <- struct{}{}
+				<-convo.closed
+				log15.Debug("shut down conversation", "channel", id)
+			}
+			return
 		case e := <-c.rtm.IncomingEvents():
 			go c.handleRTMEvent(e)
 		case <-time.After(50 * time.Millisecond):

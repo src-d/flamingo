@@ -3,6 +3,7 @@ package slack
 import (
 	"io"
 	"log"
+	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -23,21 +24,25 @@ type ClientOptions struct {
 
 type slackClient struct {
 	sync.RWMutex
-	webhook        *WebhookService
-	options        ClientOptions
-	token          string
-	controllers    []flamingo.Controller
-	actionHandlers map[string]flamingo.ActionHandler
-	bots           map[string]*botClient
+	webhook         *WebhookService
+	options         ClientOptions
+	token           string
+	controllers     []flamingo.Controller
+	actionHandlers  map[string]flamingo.ActionHandler
+	bots            map[string]*botClient
+	shutdown        chan struct{}
+	shutdownWebhook chan struct{}
 }
 
 func NewClient(token string, options ClientOptions) flamingo.Client {
 	return &slackClient{
-		options:        options,
-		token:          token,
-		webhook:        NewWebhookService(token),
-		actionHandlers: make(map[string]flamingo.ActionHandler),
-		bots:           make(map[string]*botClient),
+		options:         options,
+		token:           token,
+		webhook:         NewWebhookService(token),
+		actionHandlers:  make(map[string]flamingo.ActionHandler),
+		bots:            make(map[string]*botClient),
+		shutdown:        make(chan struct{}, 1),
+		shutdownWebhook: make(chan struct{}, 1),
 	}
 }
 
@@ -95,6 +100,18 @@ func (c *slackClient) AddBot(id, token string) {
 	c.bots[id] = newBotClient(id, token, c)
 }
 
+func (c *slackClient) Stop() {
+	for id, bot := range c.bots {
+		log15.Debug("shutting down bot", "id", id)
+		bot.shutdown <- struct{}{}
+		<-bot.closed
+		log15.Debug("shut down bot", "id", id)
+	}
+
+	c.shutdown <- struct{}{}
+	c.shutdownWebhook <- struct{}{}
+}
+
 func (c *slackClient) runWebhook() {
 	srv := http.Server{
 		ReadTimeout:  1 * time.Second,
@@ -103,7 +120,20 @@ func (c *slackClient) runWebhook() {
 		Handler:      c.webhook,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	l, err := net.Listen("tcp", c.options.WebhookAddr)
+	if err != nil {
+		log15.Crit("error creating listenre", "err", err)
+	}
+	defer l.Close()
+
+	go func() {
+		<-c.shutdownWebhook
+		l.Close()
+	}()
+
+	if err := srv.Serve(l); err != nil {
+		log15.Crit("error running webhook", "err", err.Error())
+	}
 }
 
 func (c *slackClient) Run() error {
@@ -119,6 +149,9 @@ func (c *slackClient) Run() error {
 		case action := <-actions:
 			log15.Debug("action received", "callback", action.CallbackID)
 			go c.handleActionCallback(action)
+
+		case <-c.shutdown:
+			return nil
 
 		case <-time.After(50 * time.Millisecond):
 		}

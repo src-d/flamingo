@@ -15,6 +15,8 @@ type botConversation struct {
 	rtm      slackRTM
 	actions  chan slack.AttachmentActionCallback
 	messages chan *slack.MessageEvent
+	shutdown chan struct{}
+	closed   chan struct{}
 	delegate handlerDelegate
 }
 
@@ -36,6 +38,8 @@ func newBotConversation(bot, channel string, rtm slackRTM, delegate handlerDeleg
 		},
 		actions:  make(chan slack.AttachmentActionCallback),
 		messages: make(chan *slack.MessageEvent),
+		shutdown: make(chan struct{}, 1),
+		closed:   make(chan struct{}, 1),
 		delegate: delegate,
 	}, nil
 }
@@ -43,6 +47,8 @@ func newBotConversation(bot, channel string, rtm slackRTM, delegate handlerDeleg
 func (c *botConversation) run() {
 	for {
 		select {
+		case <-c.shutdown:
+			return
 		case msg := <-c.messages:
 			message, err := c.convertMessage(msg)
 			if err != nil {

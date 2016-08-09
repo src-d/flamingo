@@ -8,6 +8,7 @@ type Client interface {
 	AddActionHandler(string, ActionHandler)
 	AddBot(string, string)
 	Run() error
+	Stop()
 }
 
 type ClientType uint
