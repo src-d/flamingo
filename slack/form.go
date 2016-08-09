@@ -32,7 +32,9 @@ func formToMessage(bot, channel string, form flamingo.Form) slack.PostMessagePar
 	} else {
 		params.Attachments = append(params.Attachments, headerAttachment(form))
 		for _, g := range form.Fields {
-			params.Attachments = append(params.Attachments, groupToAttachment(bot, channel, g))
+			att := groupToAttachment(bot, channel, g)
+			att.Color = form.Color
+			params.Attachments = append(params.Attachments, att)
 		}
 	}
 
