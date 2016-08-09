@@ -2,7 +2,6 @@ package slack
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"net/http"
 
 	"github.com/nlopes/slack"
@@ -26,14 +25,9 @@ func (s *WebhookService) Consume() <-chan slack.AttachmentActionCallback {
 
 func (s *WebhookService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	bytes, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	var callback slack.AttachmentActionCallback
-	if err := json.Unmarshal(bytes, &callback); err != nil {
+	err := json.NewDecoder(r.Body).Decode(&callback)
+	if err != nil {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
