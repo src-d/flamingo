@@ -76,7 +76,7 @@ func (c *botConversation) createBot() flamingo.Bot {
 	return &bot{
 		id:      c.bot,
 		channel: c.channel,
-		poster:  c.rtm,
+		api:     c.rtm,
 		msgs:    c.messages,
 		actions: c.actions,
 	}

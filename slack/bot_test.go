@@ -16,12 +16,12 @@ type postMessageArgs struct {
 	params  slack.PostMessageParameters
 }
 
-type posterMock struct {
+type apiMock struct {
 	msgs     []postMessageArgs
 	callback func(postMessageArgs) bool
 }
 
-func (m *posterMock) PostMessage(channel, text string, params slack.PostMessageParameters) (string, string, error) {
+func (m *apiMock) PostMessage(channel, text string, params slack.PostMessageParameters) (string, string, error) {
 	args := postMessageArgs{channel, text, params}
 	m.msgs = append(m.msgs, args)
 	if m.callback != nil {
@@ -33,7 +33,7 @@ func (m *posterMock) PostMessage(channel, text string, params slack.PostMessageP
 	return "", "", nil
 }
 
-func (m *posterMock) GetUserInfo(id string) (*slack.User, error) {
+func (m *apiMock) GetUserInfo(id string) (*slack.User, error) {
 	return &slack.User{
 		ID:       id,
 		Name:     "user",
@@ -41,24 +41,24 @@ func (m *posterMock) GetUserInfo(id string) (*slack.User, error) {
 	}, nil
 }
 
-func (m *posterMock) GetChannelInfo(id string) (*slack.Channel, error) {
+func (m *apiMock) GetChannelInfo(id string) (*slack.Channel, error) {
 	ch := &slack.Channel{}
 	ch.ID = id
 	ch.Name = "channel"
 	return ch, nil
 }
 
-func newPosterMock(callback func(postMessageArgs) bool) *posterMock {
-	return &posterMock{
+func newapiMock(callback func(postMessageArgs) bool) *apiMock {
+	return &apiMock{
 		callback: callback,
 	}
 }
 
 func TestSay(t *testing.T) {
 	assert := assert.New(t)
-	mock := newPosterMock(nil)
+	mock := newapiMock(nil)
 	bot := &bot{
-		poster: mock,
+		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
 		},
@@ -80,9 +80,9 @@ func TestSay(t *testing.T) {
 
 func TestReply(t *testing.T) {
 	assert := assert.New(t)
-	mock := newPosterMock(nil)
+	mock := newapiMock(nil)
 	bot := &bot{
-		poster: mock,
+		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
 		},
@@ -102,10 +102,10 @@ func TestReply(t *testing.T) {
 
 func TestAsk(t *testing.T) {
 	assert := assert.New(t)
-	mock := newPosterMock(nil)
+	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 1)
 	bot := &bot{
-		poster: mock,
+		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
 		},
@@ -126,10 +126,10 @@ func TestAsk(t *testing.T) {
 
 func TestConversation(t *testing.T) {
 	assert := assert.New(t)
-	mock := newPosterMock(nil)
+	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 2)
 	bot := &bot{
-		poster: mock,
+		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
 		},
@@ -161,11 +161,11 @@ func TestConversation(t *testing.T) {
 
 func TestWaitForActionIgnorePolicy(t *testing.T) {
 	assert := assert.New(t)
-	mock := newPosterMock(nil)
+	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 1)
 	actions := make(chan slack.AttachmentActionCallback, 1)
 	bot := &bot{
-		poster: mock,
+		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
 		},
@@ -198,11 +198,11 @@ func TestWaitForActionIgnorePolicy(t *testing.T) {
 
 func TestWaitForActionReplyPolicy(t *testing.T) {
 	assert := assert.New(t)
-	mock := newPosterMock(nil)
+	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 1)
 	actions := make(chan slack.AttachmentActionCallback, 1)
 	bot := &bot{
-		poster: mock,
+		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
 		},
@@ -242,10 +242,10 @@ func TestWaitForActionReplyPolicy(t *testing.T) {
 
 func TestForm(t *testing.T) {
 	assert := assert.New(t)
-	mock := newPosterMock(nil)
+	mock := newapiMock(nil)
 	bot := &bot{
-		id:     "bar",
-		poster: mock,
+		id:  "bar",
+		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
 		},

@@ -11,7 +11,7 @@ import (
 
 type slackRTM interface {
 	IncomingEvents() chan slack.RTMEvent
-	messagePoster
+	slackAPI
 }
 
 type slackRTMWrapper struct {

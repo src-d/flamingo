@@ -8,7 +8,7 @@ import (
 	"github.com/nlopes/slack"
 )
 
-type messagePoster interface {
+type slackAPI interface {
 	PostMessage(string, string, slack.PostMessageParameters) (string, string, error)
 	GetUserInfo(string) (*slack.User, error)
 	GetChannelInfo(string) (*slack.Channel, error)
@@ -17,7 +17,7 @@ type messagePoster interface {
 type bot struct {
 	id      string
 	channel flamingo.Channel
-	poster  messagePoster
+	api     slackAPI
 	msgs    <-chan *slack.MessageEvent
 	actions <-chan slack.AttachmentActionCallback
 }
@@ -72,7 +72,7 @@ func (b *bot) Say(msg flamingo.OutgoingMessage) error {
 		return err
 	}
 
-	_, _, err = b.poster.PostMessage(channel, msg.Text, params)
+	_, _, err = b.api.PostMessage(channel, msg.Text, params)
 	return err
 }
 
@@ -102,7 +102,7 @@ func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (fla
 
 func (b *bot) Form(form flamingo.Form) error {
 	params := formToMessage(b.ID(), b.channel.ID, form)
-	_, _, err := b.poster.PostMessage(b.channel.ID, " ", params)
+	_, _, err := b.api.PostMessage(b.channel.ID, " ", params)
 	return err
 }
 
@@ -121,7 +121,7 @@ func (b *bot) convertMessage(src *slack.MessageEvent) (flamingo.Message, error) 
 }
 
 func (b *bot) findUser(id string) (flamingo.User, error) {
-	user, err := b.poster.GetUserInfo(id)
+	user, err := b.api.GetUserInfo(id)
 	if err != nil {
 		return flamingo.User{}, err
 	}
