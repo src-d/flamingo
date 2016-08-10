@@ -22,6 +22,11 @@ type ClientOptions struct {
 	Debug         bool
 }
 
+type clientBot interface {
+	handleAction(string, slack.AttachmentActionCallback)
+	stop()
+}
+
 type slackClient struct {
 	sync.RWMutex
 	webhook         *WebhookService
@@ -29,21 +34,24 @@ type slackClient struct {
 	token           string
 	controllers     []flamingo.Controller
 	actionHandlers  map[string]flamingo.ActionHandler
-	bots            map[string]*botClient
+	bots            map[string]clientBot
 	shutdown        chan struct{}
 	shutdownWebhook chan struct{}
 }
 
 func NewClient(token string, options ClientOptions) flamingo.Client {
-	return &slackClient{
+	cli := &slackClient{
 		options:         options,
 		token:           token,
 		webhook:         NewWebhookService(token),
 		actionHandlers:  make(map[string]flamingo.ActionHandler),
-		bots:            make(map[string]*botClient),
+		bots:            make(map[string]clientBot),
 		shutdown:        make(chan struct{}, 1),
 		shutdownWebhook: make(chan struct{}, 1),
 	}
+
+	cli.SetLogOutput(nil)
+	return cli
 }
 
 func (c *slackClient) SetLogOutput(w io.Writer) {
@@ -64,10 +72,14 @@ func (c *slackClient) SetLogOutput(w io.Writer) {
 }
 
 func (c *slackClient) AddController(ctrl flamingo.Controller) {
+	c.Lock()
+	defer c.Unlock()
 	c.controllers = append(c.controllers, ctrl)
 }
 
 func (c *slackClient) AddActionHandler(id string, handler flamingo.ActionHandler) {
+	c.Lock()
+	defer c.Unlock()
 	log15.Debug("added action handler", "id", id)
 	c.actionHandlers[id] = handler
 }
@@ -103,8 +115,7 @@ func (c *slackClient) AddBot(id, token string) {
 func (c *slackClient) Stop() error {
 	for id, bot := range c.bots {
 		log15.Debug("shutting down bot", "id", id)
-		bot.shutdown <- struct{}{}
-		<-bot.closed
+		bot.stop()
 		log15.Debug("shut down bot", "id", id)
 	}
 
@@ -123,7 +134,7 @@ func (c *slackClient) runWebhook() {
 
 	l, err := net.Listen("tcp", c.options.WebhookAddr)
 	if err != nil {
-		log15.Crit("error creating listenre", "err", err)
+		log15.Crit("error creating listener", "err", err)
 	}
 	defer l.Close()
 

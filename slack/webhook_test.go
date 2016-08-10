@@ -17,7 +17,7 @@ const testCallback = `{
       "value": "yes"
     }
   ],
-  "callback_id": "test_callback",
+  "callback_id": "bot::channel::test_callback",
   "team": {
     "id": "T47563693",
     "domain": "watermelonsugar"
@@ -49,7 +49,7 @@ func TestWebhook(t *testing.T) {
 		{nil, http.StatusBadRequest, false, ""},
 		{[]byte("skdjadljsal"), http.StatusBadRequest, false, ""},
 		{[]byte(`{"token": "fooo"}`), http.StatusUnauthorized, false, ""},
-		{[]byte(testCallback), http.StatusOK, true, "test_callback"},
+		{[]byte(testCallback), http.StatusOK, true, "bot::channel::test_callback"},
 	}
 
 	for _, c := range cases {

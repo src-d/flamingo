@@ -118,3 +118,8 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 		log15.Crit("Invalid credentials for bot", "bot", c.id)
 	}
 }
+
+func (c *botClient) stop() {
+	c.shutdown <- struct{}{}
+	<-c.closed
+}
