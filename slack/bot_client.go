@@ -45,6 +45,7 @@ func newBotClient(id string, rtm slackRTM, delegate handlerDelegate) *botClient 
 }
 
 func (c *botClient) runRTM() {
+	log15.Info("starting real time", "bot", c.id)
 	for {
 		select {
 		case <-c.shutdown:
@@ -78,6 +79,8 @@ func (c *botClient) handleAction(channel string, action slack.AttachmentActionCa
 func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 	c.Lock()
 	defer c.Unlock()
+
+	log15.Debug("received event of type", "type", e.Type)
 
 	switch evt := e.Data.(type) {
 	case *slack.MessageEvent:

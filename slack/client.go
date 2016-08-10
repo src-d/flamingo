@@ -119,7 +119,9 @@ func (c *slackClient) AddBot(id, token string) {
 
 	client := slack.New(token)
 	client.SetDebug(false)
-	c.bots[id] = newBotClient(id, &slackRTMWrapper{client.NewRTM()}, c)
+	rtm := client.NewRTM()
+	go rtm.ManageConnection()
+	c.bots[id] = newBotClient(id, &slackRTMWrapper{rtm}, c)
 }
 
 func (c *slackClient) Stop() error {
