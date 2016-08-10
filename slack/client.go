@@ -27,6 +27,14 @@ type clientBot interface {
 	stop()
 }
 
+type slackRTMWrapper struct {
+	*slack.RTM
+}
+
+func (s *slackRTMWrapper) IncomingEvents() chan slack.RTMEvent {
+	return s.RTM.IncomingEvents
+}
+
 type slackClient struct {
 	sync.RWMutex
 	webhook         *WebhookService
@@ -109,7 +117,9 @@ func (c *slackClient) AddBot(id, token string) {
 	c.Lock()
 	defer c.Unlock()
 
-	c.bots[id] = newBotClient(id, token, c)
+	client := slack.New(token)
+	client.SetDebug(false)
+	c.bots[id] = newBotClient(id, &slackRTMWrapper{client.NewRTM()}, c)
 }
 
 func (c *slackClient) Stop() error {

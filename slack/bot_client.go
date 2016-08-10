@@ -15,14 +15,6 @@ type slackRTM interface {
 	slackAPI
 }
 
-type slackRTMWrapper struct {
-	*slack.RTM
-}
-
-func (s *slackRTMWrapper) IncomingEvents() chan slack.RTMEvent {
-	return s.RTM.IncomingEvents
-}
-
 type handlerDelegate interface {
 	ControllerFor(flamingo.Message) (flamingo.Controller, bool)
 	ActionHandler(string) (flamingo.ActionHandler, bool)
@@ -38,13 +30,10 @@ type botClient struct {
 	delegate      handlerDelegate
 }
 
-func newBotClient(id, token string, delegate handlerDelegate) *botClient {
-	client := slack.New(token)
-	client.SetDebug(false)
-
+func newBotClient(id string, rtm slackRTM, delegate handlerDelegate) *botClient {
 	cli := &botClient{
 		id:            id,
-		rtm:           &slackRTMWrapper{client.NewRTM()},
+		rtm:           rtm,
 		shutdown:      make(chan struct{}, 1),
 		closed:        make(chan struct{}, 1),
 		conversations: make(map[string]*botConversation),
@@ -61,10 +50,10 @@ func (c *botClient) runRTM() {
 		case <-c.shutdown:
 			for id, convo := range c.conversations {
 				log15.Debug("shutting down conversation", "channel", id)
-				convo.shutdown <- struct{}{}
-				<-convo.closed
+				convo.stop()
 				log15.Debug("shut down conversation", "channel", id)
 			}
+			c.closed <- struct{}{}
 			return
 		case e := <-c.rtm.IncomingEvents():
 			go c.handleRTMEvent(e)
@@ -121,5 +110,7 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 
 func (c *botClient) stop() {
 	c.shutdown <- struct{}{}
+	close(c.shutdown)
 	<-c.closed
+	close(c.closed)
 }

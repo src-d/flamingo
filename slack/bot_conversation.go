@@ -48,6 +48,7 @@ func (c *botConversation) run() {
 	for {
 		select {
 		case <-c.shutdown:
+			c.closed <- struct{}{}
 			return
 		case msg := <-c.messages:
 			message, err := c.convertMessage(msg)
@@ -109,4 +110,13 @@ func (c *botConversation) convertMessage(src *slack.MessageEvent) (flamingo.Mess
 		Type:     flamingo.SlackClient,
 		Extra:    user,
 	}, c.channel, src.Msg), nil
+}
+
+func (c *botConversation) stop() {
+	c.shutdown <- struct{}{}
+	close(c.shutdown)
+	<-c.closed
+	close(c.closed)
+	close(c.actions)
+	close(c.messages)
 }
