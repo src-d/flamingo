@@ -100,7 +100,7 @@ func (c *slackClient) AddBot(id, token string) {
 	c.bots[id] = newBotClient(id, token, c)
 }
 
-func (c *slackClient) Stop() {
+func (c *slackClient) Stop() error {
 	for id, bot := range c.bots {
 		log15.Debug("shutting down bot", "id", id)
 		bot.shutdown <- struct{}{}
@@ -110,6 +110,7 @@ func (c *slackClient) Stop() {
 
 	c.shutdown <- struct{}{}
 	c.shutdownWebhook <- struct{}{}
+	return nil
 }
 
 func (c *slackClient) runWebhook() {
