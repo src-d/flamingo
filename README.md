@@ -1,4 +1,4 @@
-<img src="https://rawgit.com/mvader/flamingo/master/flamingo.png" width="400" height="200" />
+<img src="https://rawgit.com/mvader/flamingo/master/logo.png" width="400" height="200" />
 
 [![godoc reference](https://godoc.org/github.com/mvader/flamingo?status.png)](https://godoc.org/github.com/mvader/flamingo)
 
