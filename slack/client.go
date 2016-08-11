@@ -13,7 +13,7 @@ import (
 	"gopkg.in/inconshreveable/log15.v2"
 
 	"github.com/mvader/flamingo"
-	"github.com/nlopes/slack"
+	"github.com/mvader/slack"
 )
 
 type ClientOptions struct {

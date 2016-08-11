@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/mvader/flamingo"
-	"github.com/nlopes/slack"
+	"github.com/mvader/slack"
 )
 
 type btnStyle flamingo.ButtonType

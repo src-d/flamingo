@@ -13,3 +13,7 @@ You can see a simple example at [examples folder](https://github.com/mvader/flam
 ### License
 
 MIT License
+
+### Notes
+
+The slack client uses [mvader/slack](https://github.com/mvader/slack) but right now is using a fork until [this pull request](https://github.com/mvader/slack/pull/93) is merged.

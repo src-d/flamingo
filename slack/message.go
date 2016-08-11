@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/mvader/flamingo"
-	"github.com/nlopes/slack"
+	"github.com/mvader/slack"
 )
 
 func newMessage(user flamingo.User, channel flamingo.Channel, src slack.Msg) flamingo.Message {
