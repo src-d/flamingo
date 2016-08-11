@@ -1,34 +1,53 @@
 package main
 
 import (
+	"log"
+	"os"
 	"strings"
 
 	"github.com/mvader/flamingo"
+	"github.com/mvader/flamingo/slack"
 )
 
-const (
-	token = "YOUR_TOKEN"
-	name  = "test-bot"
-)
+type helloController struct{}
 
-type HelloHandler struct {
+func (c *helloController) CanHandle(msg flamingo.Message) bool {
+	return strings.ToLower(strings.TrimSpace(msg.Text)) == "hello"
 }
 
-func (HelloHandler) Name() string { return "hello-handler" }
-func (HelloHandler) Help() string { return "i say hello ```say hello```" }
+func (c *helloController) Handle(bot flamingo.Bot, msg flamingo.Message) error {
+	if err := bot.Say(flamingo.NewOutgoingMessage("hello!")); err != nil {
+		return err
+	}
 
-func (HelloHandler) IsMatch(_ string, text string) bool {
-	return strings.ToLower(strings.TrimSpace(text)) == "say hello"
-}
+	resp, err := bot.Ask(flamingo.NewOutgoingMessage("how are you?"))
+	if err != nil {
+		return err
+	}
 
-func (HelloHandler) Handle(msg flamingo.Message) {
-	msg.Reply("Hello!")
+	text := strings.ToLower(strings.TrimSpace(resp.Text))
+	if text == "good" || text == "fine" {
+		if err := bot.Say(flamingo.NewOutgoingMessage("i'm glad!")); err != nil {
+			return err
+		}
+	} else {
+		if err := bot.Say(flamingo.NewOutgoingMessage(":(")); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func main() {
-	e := flamingo.New(name, token, flamingo.Options{
+	token := os.Getenv("SLACK_TOKEN")
+	id := os.Getenv("BOT_ID")
+	client := slack.NewClient(token, slack.ClientOptions{
 		Debug: true,
 	})
-	e.AddHandler(&HelloHandler{})
-	e.Run()
+
+	client.AddController(&helloController{})
+	client.AddBot(id, token)
+
+	log.Fatal(client.Run())
 }
