@@ -84,6 +84,11 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 
 	switch evt := e.Data.(type) {
 	case *slack.MessageEvent:
+		if evt.BotID == c.id {
+			log15.Debug("got message from self, ignoring")
+			return
+		}
+
 		conv, ok := c.conversations[evt.Channel]
 		if !ok {
 			log15.Debug("conversation does not exist for bot, creating", "channel", evt.Channel, "bot", c.id)

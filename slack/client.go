@@ -48,6 +48,10 @@ type slackClient struct {
 }
 
 func NewClient(token string, options ClientOptions) flamingo.Client {
+	if options.WebhookAddr == "" {
+		options.WebhookAddr = ":8080"
+	}
+
 	cli := &slackClient{
 		options:         options,
 		token:           token,
@@ -163,7 +167,7 @@ func (c *slackClient) runWebhook() {
 func (c *slackClient) Run() error {
 	log15.Info("Starting flamingo slack client")
 	if c.options.EnableWebhook {
-		log15.Info("Starting webhook server endpoint")
+		log15.Info("Starting webhook server endpoint", "address", c.options.WebhookAddr)
 		go c.runWebhook()
 	}
 
