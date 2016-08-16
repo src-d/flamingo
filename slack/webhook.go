@@ -23,10 +23,12 @@ func NewWebhookService(token string) *WebhookService {
 	}
 }
 
+// Consume returns a channel where callbacks will be sent.
 func (s *WebhookService) Consume() <-chan slack.AttachmentActionCallback {
 	return s.callbacks
 }
 
+// ServeHTTP is the actual HTTP handler of the service.
 func (s *WebhookService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	var callback slack.AttachmentActionCallback
