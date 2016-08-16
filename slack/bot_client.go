@@ -86,6 +86,10 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 
 	switch evt := e.Data.(type) {
 	case *slack.MessageEvent:
+		// For now, ignore all messages that are not new messages
+		if evt.SubType != "" {
+			return
+		}
 		c.handleMessageEvent(evt)
 
 	case *slack.LatencyReport:
