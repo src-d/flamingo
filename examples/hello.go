@@ -11,27 +11,32 @@ import (
 
 type helloController struct{}
 
+func (c *helloController) HandleIntro(bot flamingo.Bot, channel flamingo.Channel) error {
+	_, err := bot.Say(flamingo.NewOutgoingMessage("Hey! I am a bot, try saying `hello` to me"))
+	return err
+}
+
 func (c *helloController) CanHandle(msg flamingo.Message) bool {
 	return strings.ToLower(strings.TrimSpace(msg.Text)) == "hello"
 }
 
 func (c *helloController) Handle(bot flamingo.Bot, msg flamingo.Message) error {
-	if err := bot.Say(flamingo.NewOutgoingMessage("hello!")); err != nil {
+	if _, err := bot.Say(flamingo.NewOutgoingMessage("hello!")); err != nil {
 		return err
 	}
 
-	resp, err := bot.Ask(flamingo.NewOutgoingMessage("how are you?"))
+	_, resp, err := bot.Ask(flamingo.NewOutgoingMessage("how are you?"))
 	if err != nil {
 		return err
 	}
 
 	text := strings.ToLower(strings.TrimSpace(resp.Text))
 	if text == "good" || text == "fine" {
-		if err := bot.Say(flamingo.NewOutgoingMessage("i'm glad!")); err != nil {
+		if _, err := bot.Say(flamingo.NewOutgoingMessage("i'm glad!")); err != nil {
 			return err
 		}
 	} else {
-		if err := bot.Say(flamingo.NewOutgoingMessage(":(")); err != nil {
+		if _, err := bot.Say(flamingo.NewOutgoingMessage(":(")); err != nil {
 			return err
 		}
 	}
@@ -46,8 +51,10 @@ func main() {
 		Debug: true,
 	})
 
-	client.AddController(&helloController{})
+	ctrl := &helloController{}
+	client.AddController(ctrl)
 	client.AddBot(id, token)
+	client.SetIntroHandler(ctrl)
 
 	log.Fatal(client.Run())
 }

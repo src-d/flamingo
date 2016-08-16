@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -18,6 +19,7 @@ type slackRTM interface {
 type handlerDelegate interface {
 	ControllerFor(flamingo.Message) (flamingo.Controller, bool)
 	ActionHandler(string) (flamingo.ActionHandler, bool)
+	HandleIntro(flamingo.Bot, flamingo.Channel)
 }
 
 type botClient struct {
@@ -84,36 +86,75 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 
 	switch evt := e.Data.(type) {
 	case *slack.MessageEvent:
-		if evt.BotID == c.id {
-			log15.Debug("got message from self, ignoring")
-			return
-		}
+		c.handleMessageEvent(evt)
 
-		conv, ok := c.conversations[evt.Channel]
-		if !ok {
-			log15.Debug("conversation does not exist for bot, creating", "channel", evt.Channel, "bot", c.id)
-			var err error
-			conv, err = newBotConversation(c.id, evt.Channel, c.rtm, c.delegate)
-			if err != nil {
-				log15.Error("unable to create conversation for bot", "channel", evt.Channel, "bot", c.id, "error", err.Error())
-				return
-			}
-
-			c.conversations[evt.Channel] = conv
-			go conv.run()
-		}
-
-		log15.Debug("message for channel", "channel", evt.Channel, "text", evt.Text)
-		conv.messages <- evt
 	case *slack.LatencyReport:
 		log15.Info("Current latency", "latency", evt.Value)
 
 	case *slack.RTMError:
 		log15.Error("Real Time Error", "error", evt.Error())
 
+	case *slack.IMCreatedEvent:
+		c.handleIMCreatedEvent(evt)
+
+	case *slack.GroupJoinedEvent:
+		c.handleGroupJoinedEvent(evt)
+
 	case *slack.InvalidAuthEvent:
 		log15.Crit("Invalid credentials for bot", "bot", c.id)
 	}
+}
+
+func (c *botClient) handleMessageEvent(evt *slack.MessageEvent) {
+	if evt.BotID == c.id {
+		log15.Debug("got message from self, ignoring")
+		return
+	}
+
+	conv, ok := c.conversations[evt.Channel]
+	if !ok {
+		log15.Info("this", "that", fmt.Sprintf("%#v", evt.Channel), "those", evt.SubType)
+		if err := c.newConversation(evt.Channel); err != nil {
+			log15.Error("unable to create conversation for bot", "channel", evt.Channel, "bot", c.id, "error", err.Error())
+			return
+		}
+		conv = c.conversations[evt.Channel]
+	}
+
+	log15.Debug("message for channel", "channel", evt.Channel, "text", evt.Text)
+	conv.messages <- evt
+}
+
+func (c *botClient) handleIMCreatedEvent(evt *slack.IMCreatedEvent) {
+	if err := c.newConversation(evt.Channel.ID); err != nil {
+		log15.Error("unable to create IM conversation for bot", "channel", evt.Channel.ID, "bot", c.id, "error", err.Error())
+		return
+	}
+
+	conv := c.conversations[evt.Channel.ID]
+	conv.handleIntro()
+}
+
+func (c *botClient) handleGroupJoinedEvent(evt *slack.GroupJoinedEvent) {
+	if err := c.newConversation(evt.Channel.ID); err != nil {
+		log15.Error("unable to create group conversation for bot", "channel", evt.Channel.ID, "bot", c.id, "error", err.Error())
+		return
+	}
+
+	conv := c.conversations[evt.Channel.ID]
+	conv.handleIntro()
+}
+
+func (c *botClient) newConversation(channel string) error {
+	log15.Debug("conversation does not exist for bot, creating", "channel", channel, "bot", c.id)
+	conv, err := newBotConversation(c.id, channel, c.rtm, c.delegate)
+	if err != nil {
+		return err
+	}
+
+	c.conversations[channel] = conv
+	go conv.run()
+	return nil
 }
 
 func (c *botClient) stop() {

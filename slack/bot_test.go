@@ -54,6 +54,10 @@ func newapiMock(callback func(postMessageArgs) bool) *apiMock {
 	}
 }
 
+func ignoreID(id string, err error) error {
+	return err
+}
+
 func TestSay(t *testing.T) {
 	assert := assert.New(t)
 	mock := newapiMock(nil)
@@ -64,11 +68,11 @@ func TestSay(t *testing.T) {
 		},
 	}
 
-	assert.Nil(bot.Say(flamingo.NewOutgoingMessage("hi there")))
-	assert.Nil(bot.Say(flamingo.OutgoingMessage{
+	assert.Nil(ignoreID(bot.Say(flamingo.NewOutgoingMessage("hi there"))))
+	assert.Nil(ignoreID(bot.Say(flamingo.OutgoingMessage{
 		ChannelID: "bar",
 		Text:      "hi there you too",
-	}))
+	})))
 
 	assert.Equal(len(mock.msgs), 2)
 	assert.Equal(mock.msgs[0].channel, "foo")
@@ -88,12 +92,12 @@ func TestReply(t *testing.T) {
 		},
 	}
 
-	assert.Nil(bot.Reply(
+	assert.Nil(ignoreID(bot.Reply(
 		flamingo.Message{
 			User: flamingo.User{Username: "baz"},
 		},
 		flamingo.NewOutgoingMessage("hi there"),
-	))
+	)))
 
 	assert.Equal(len(mock.msgs), 1)
 	assert.Equal(mock.msgs[0].channel, "foo")
@@ -119,7 +123,7 @@ func TestAsk(t *testing.T) {
 		},
 	}
 
-	msg, err := bot.Ask(flamingo.NewOutgoingMessage("how are you?"))
+	_, msg, err := bot.Ask(flamingo.NewOutgoingMessage("how are you?"))
 	assert.Nil(err)
 	assert.Equal(msg.Text, "fine, thanks")
 }
@@ -148,7 +152,7 @@ func TestConversation(t *testing.T) {
 		},
 	}
 
-	msgs, err := bot.Conversation(flamingo.Conversation{
+	_, msgs, err := bot.Conversation(flamingo.Conversation{
 		flamingo.NewOutgoingMessage("hi, how are you?"),
 		flamingo.NewOutgoingMessage("fine, too"),
 	})
@@ -251,7 +255,7 @@ func TestForm(t *testing.T) {
 		},
 	}
 
-	assert.Nil(bot.Form(flamingo.Form{
+	assert.Nil(ignoreID(bot.Form(flamingo.Form{
 		Title:   "title",
 		Text:    "text",
 		Color:   "color",
@@ -268,7 +272,7 @@ func TestForm(t *testing.T) {
 				Value: "value",
 			}),
 		},
-	}))
+	})))
 
 	assert.Equal(len(mock.msgs), 1)
 	assert.Equal(mock.msgs[0].channel, "foo")

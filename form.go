@@ -5,6 +5,8 @@ type Form struct {
 	Text    string
 	Combine bool
 	Color   string
+	Footer  string
+	Image   *Image
 	Fields  []FieldGroup
 }
 
@@ -98,3 +100,8 @@ type TextField struct {
 }
 
 func (f TextField) isField() {}
+
+type Image struct {
+	URL  string
+	Text string
+}

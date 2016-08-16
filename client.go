@@ -7,6 +7,7 @@ type Client interface {
 	AddController(Controller)
 	AddActionHandler(string, ActionHandler)
 	AddBot(string, string)
+	SetIntroHandler(IntroHandler)
 	Run() error
 	Stop() error
 }

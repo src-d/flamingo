@@ -2,7 +2,6 @@ package slack
 
 import (
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"os"
@@ -45,6 +44,7 @@ type slackClient struct {
 	bots            map[string]clientBot
 	shutdown        chan struct{}
 	shutdownWebhook chan struct{}
+	introHandler    flamingo.IntroHandler
 }
 
 func NewClient(token string, options ClientOptions) flamingo.Client {
@@ -117,6 +117,12 @@ func (c *slackClient) ActionHandler(id string) (flamingo.ActionHandler, bool) {
 	return handler, ok
 }
 
+func (c *slackClient) SetIntroHandler(handler flamingo.IntroHandler) {
+	c.Lock()
+	defer c.Unlock()
+	c.introHandler = handler
+}
+
 func (c *slackClient) AddBot(id, token string) {
 	c.Lock()
 	defer c.Unlock()
@@ -126,6 +132,16 @@ func (c *slackClient) AddBot(id, token string) {
 	rtm := client.NewRTM()
 	go rtm.ManageConnection()
 	c.bots[id] = newBotClient(id, &slackRTMWrapper{rtm}, c)
+}
+
+func (c *slackClient) HandleIntro(bot flamingo.Bot, channel flamingo.Channel) {
+	if c.introHandler != nil {
+		if err := c.introHandler.HandleIntro(bot, channel); err != nil {
+			log15.Error("error handling intro", "channel", channel.ID, "err", err.Error())
+		}
+	} else {
+		log15.Warn("there is no intro handler, ignoring")
+	}
 }
 
 func (c *slackClient) Stop() error {
@@ -192,14 +208,14 @@ func (c *slackClient) handleActionCallback(action slack.AttachmentActionCallback
 
 	parts := strings.Split(action.CallbackID, "::")
 	if len(parts) < 3 {
-		log.Printf("invalid action with callback %q", action.CallbackID)
+		log15.Error("invalid action", "callback", action.CallbackID)
 		return
 	}
 
 	bot, channel, id := parts[0], parts[1], parts[2]
 	b, ok := c.bots[bot]
 	if !ok {
-		log.Printf("bot with id %q not found", bot)
+		log15.Warn("bot not found", "id", bot)
 		return
 	}
 
