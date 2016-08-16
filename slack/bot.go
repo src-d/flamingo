@@ -12,6 +12,7 @@ import (
 
 type slackAPI interface {
 	PostMessage(string, string, slack.PostMessageParameters) (string, string, error)
+	UpdateMessage(string, string, string, slack.UpdateMessageParameters) (string, string, string, error)
 	GetUserInfo(string) (*slack.User, error)
 	GetChannelInfo(string) (*slack.Channel, error)
 }
@@ -128,12 +129,25 @@ func (b *bot) Image(img flamingo.Image) (string, error) {
 	return ts, err
 }
 
-func (b *bot) UpdateMessage(id string, replacement flamingo.OutgoingMessage) error {
-	return nil
+func (b *bot) UpdateMessage(id string, replacement string) (string, error) {
+	_, ts, _, err := b.api.UpdateMessage(b.channel.ID, id, replacement, slack.NewUpdateMessageParameters())
+	if err != nil {
+		log15.Error("error updating message", "id", id, "err", err.Error())
+	}
+
+	return ts, err
 }
 
-func (b *bot) UpdateForm(id string, replacement flamingo.Form) error {
-	return nil
+func (b *bot) UpdateForm(id string, replacement flamingo.Form) (string, error) {
+	msg := formToMessage(b.ID(), b.channel.ID, replacement)
+	params := slack.NewUpdateMessageParameters()
+	params.Attachments = msg.Attachments
+	_, ts, _, err := b.api.UpdateMessage(b.channel.ID, id, " ", params)
+	if err != nil {
+		log15.Error("error updating form", "id", id, "err", err.Error())
+	}
+
+	return ts, err
 }
 
 func (b *bot) AskUntil(msg flamingo.OutgoingMessage, check flamingo.AnswerChecker) (string, flamingo.Message, error) {

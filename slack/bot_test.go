@@ -17,8 +17,16 @@ type postMessageArgs struct {
 	params  slack.PostMessageParameters
 }
 
+type updateMessageArgs struct {
+	channel string
+	id      string
+	text    string
+	params  slack.UpdateMessageParameters
+}
+
 type apiMock struct {
 	msgs     []postMessageArgs
+	updates  []updateMessageArgs
 	callback func(postMessageArgs) bool
 }
 
@@ -32,6 +40,12 @@ func (m *apiMock) PostMessage(channel, text string, params slack.PostMessagePara
 	}
 
 	return "", "", nil
+}
+
+func (m *apiMock) UpdateMessage(channel, id, text string, params slack.UpdateMessageParameters) (string, string, string, error) {
+	args := updateMessageArgs{channel, id, text, params}
+	m.updates = append(m.updates, args)
+	return "", "", "", nil
 }
 
 func (m *apiMock) GetUserInfo(id string) (*slack.User, error) {

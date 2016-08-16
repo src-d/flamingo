@@ -10,8 +10,8 @@ type Bot interface {
 	Say(OutgoingMessage) (string, error)
 	Form(Form) (string, error)
 	Image(Image) (string, error)
-	UpdateMessage(string, OutgoingMessage) error
-	UpdateForm(string, Form) error
+	UpdateMessage(string, string) (string, error)
+	UpdateForm(string, Form) (string, error)
 	WaitForAction(string, ActionWaitingPolicy) (Action, error)
 	AskUntil(OutgoingMessage, AnswerChecker) (string, Message, error)
 }
