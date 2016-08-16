@@ -6,7 +6,6 @@ type Form struct {
 	Combine bool
 	Color   string
 	Footer  string
-	Image   *Image
 	Fields  []FieldGroup
 }
 
@@ -25,6 +24,7 @@ type FieldGroupType byte
 const (
 	ButtonGroup FieldGroupType = 1 << iota
 	TextFieldGroup
+	ImageGroup
 )
 
 type fieldGroup struct {
@@ -102,6 +102,15 @@ type TextField struct {
 func (f TextField) isField() {}
 
 type Image struct {
-	URL  string
-	Text string
+	URL          string
+	Text         string
+	ThumbnailURL string
 }
+
+func (f Image) isField() {}
+
+func (f Image) ID() string { return "" }
+
+func (f Image) Items() []Field { return []Field{f} }
+
+func (f Image) Type() FieldGroupType { return ImageGroup }

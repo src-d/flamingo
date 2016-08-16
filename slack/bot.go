@@ -120,7 +120,12 @@ func (b *bot) Form(form flamingo.Form) (string, error) {
 }
 
 func (b *bot) Image(img flamingo.Image) (string, error) {
-	return "", nil
+	_, ts, err := b.api.PostMessage(b.channel.ID, " ", imageToMessage(img))
+	if err != nil {
+		log15.Error("error posting image", "err", err.Error())
+	}
+
+	return ts, err
 }
 
 func (b *bot) UpdateMessage(id string, replacement flamingo.OutgoingMessage) error {
