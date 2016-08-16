@@ -16,4 +16,4 @@ MIT License
 
 ### Notes
 
-The slack client uses [mvader/slack](https://github.com/mvader/slack) but right now is using a fork until [this pull request](https://github.com/mvader/slack/pull/93) is merged.
+The slack client uses [nlopes/slack](https://github.com/nlopes/slack) but right now is using a fork until [this pull request](https://github.com/nlopes/slack/pull/93) is merged.
