@@ -87,7 +87,9 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 	switch evt := e.Data.(type) {
 	case *slack.MessageEvent:
 		// For now, ignore all messages that are not new messages
-		if evt.SubType != "" {
+		switch evt.SubType {
+		case "", "me_message", "bot_message":
+		default:
 			return
 		}
 		c.handleMessageEvent(evt)
