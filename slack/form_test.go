@@ -18,13 +18,16 @@ func TestFormToMessage(t *testing.T) {
 		Fields: []flamingo.FieldGroup{
 			flamingo.NewButtonGroup("fooo", flamingo.Button{}),
 			flamingo.NewTextFieldGroup(flamingo.TextField{}),
+			flamingo.Image{URL: "foo"},
 		},
 	})
 
-	assert.Equal(3, len(params.Attachments))
+	assert.Equal(4, len(params.Attachments))
 	assert.Equal("", params.Attachments[0].Footer)
 	assert.Equal("", params.Attachments[1].Footer)
-	assert.Equal("footer", params.Attachments[2].Footer)
+	assert.Equal("", params.Attachments[2].Footer)
+	assert.Equal("footer", params.Attachments[3].Footer)
+	assert.Equal("foo", params.Attachments[3].ImageURL)
 
 	params = formToMessage("aaaa", "bbbb", flamingo.Form{
 		Title:   "title",
@@ -35,11 +38,13 @@ func TestFormToMessage(t *testing.T) {
 		Fields: []flamingo.FieldGroup{
 			flamingo.NewButtonGroup("fooo", flamingo.Button{}),
 			flamingo.NewTextFieldGroup(flamingo.TextField{}),
+			flamingo.Image{URL: "foo"},
 		},
 	})
 
 	assert.Equal(1, len(params.Attachments))
 	assert.Equal("footer", params.Attachments[0].Footer)
+	assert.Equal("foo", params.Attachments[0].ImageURL)
 }
 
 func TestCombinedAttachment(t *testing.T) {
