@@ -2,6 +2,7 @@ package slack
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -126,6 +127,38 @@ func TestAsk(t *testing.T) {
 	_, msg, err := bot.Ask(flamingo.NewOutgoingMessage("how are you?"))
 	assert.Nil(err)
 	assert.Equal(msg.Text, "fine, thanks")
+}
+
+func TestAskUntil(t *testing.T) {
+	assert := assert.New(t)
+	mock := newapiMock(nil)
+	ch := make(chan *slack.MessageEvent, 2)
+	bot := &bot{
+		api: mock,
+		channel: flamingo.Channel{
+			ID: "foo",
+		},
+		msgs: ch,
+	}
+
+	for i := 1; i <= 2; i++ {
+		ch <- &slack.MessageEvent{
+			Msg: slack.Msg{
+				Text: fmt.Sprint(i),
+			},
+		}
+	}
+
+	_, msg, err := bot.AskUntil(flamingo.NewOutgoingMessage("how many eyes does a human have?"), func(msg flamingo.Message) *flamingo.OutgoingMessage {
+		if msg.Text == "2" {
+			return nil
+		}
+
+		return &flamingo.OutgoingMessage{Text: "nope"}
+	})
+	assert.Nil(err)
+	assert.Equal(2, len(mock.msgs))
+	assert.Equal(msg.Text, "2")
 }
 
 func TestConversation(t *testing.T) {

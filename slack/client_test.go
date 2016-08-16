@@ -13,7 +13,8 @@ import (
 )
 
 type helloCtrl struct {
-	msgs []flamingo.Message
+	msgs        []flamingo.Message
+	calledIntro int
 }
 
 func (*helloCtrl) CanHandle(msg flamingo.Message) bool {
@@ -22,6 +23,11 @@ func (*helloCtrl) CanHandle(msg flamingo.Message) bool {
 
 func (c *helloCtrl) Handle(bot flamingo.Bot, msg flamingo.Message) error {
 	c.msgs = append(c.msgs, msg)
+	return nil
+}
+
+func (c *helloCtrl) HandleIntro(b flamingo.Bot, channel flamingo.Channel) error {
+	c.calledIntro++
 	return nil
 }
 
@@ -127,6 +133,22 @@ func TestRunAndStop(t *testing.T) {
 
 	assert.True(bot2.stopped)
 	assert.Equal(0, len(bot2.actions))
+}
+
+func TestSetIntroHandler(t *testing.T) {
+	cli := newClient("", ClientOptions{})
+	ctrl := &helloCtrl{}
+	cli.SetIntroHandler(ctrl)
+	assert.Equal(t, reflect.ValueOf(ctrl).Pointer(), reflect.ValueOf(cli.introHandler).Pointer())
+}
+
+func TestHandleIntro(t *testing.T) {
+	cli := newClient("", ClientOptions{})
+	ctrl := &helloCtrl{}
+	cli.HandleIntro(nil, flamingo.Channel{})
+	cli.SetIntroHandler(ctrl)
+	cli.HandleIntro(nil, flamingo.Channel{})
+	assert.Equal(t, 1, ctrl.calledIntro)
 }
 
 func newClient(token string, options ClientOptions) *slackClient {

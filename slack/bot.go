@@ -77,12 +77,7 @@ func (b *bot) Say(msg flamingo.OutgoingMessage) (string, error) {
 
 	_, ts, err := b.api.PostMessage(channel, msg.Text, createPostParams(msg))
 	if err != nil {
-		log15.Error(
-			"error posting message to channel",
-			"channel", channel,
-			"error", err.Error(),
-			"text", msg.Text,
-		)
+		log15.Error("error posting message to channel", "channel", channel, "error", err.Error(), "text", msg.Text)
 	}
 
 	return ts, err

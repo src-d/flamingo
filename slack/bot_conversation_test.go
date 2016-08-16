@@ -16,7 +16,7 @@ func TestBotConversation(t *testing.T) {
 		events: make(chan slack.RTMEvent),
 	}
 	cli := NewClient("", ClientOptions{Debug: true}).(*slackClient)
-	convo, err := newBotConversation("aaaa", "bbbb", mock, cli)
+	convo, err := newBotConversation("aaaa", "Cbbbb", mock, cli)
 	assert.Nil(err)
 	go convo.run()
 	defer convo.stop()
