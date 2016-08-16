@@ -23,17 +23,19 @@ func TestCreatePostParams(t *testing.T) {
 }
 
 func TestParseTimestamp(t *testing.T) {
-	assert := assert.New(t)
-
 	cases := []struct {
-		ts       string
-		expected time.Time
+		ts                                  string
+		year                                int
+		month                               time.Month
+		day, hour, minutes, seconds, millis int
 	}{
-		{"1458170917.164398", time.Date(2016, time.March, 17, 0, 28, 37, 164398, time.Local)},
-		{"1458170917", time.Date(2016, time.March, 17, 0, 28, 37, 0, time.Local)},
+		{"1458170917.164398", 2016, time.March, 17, 0, 28, 37, 164398},
+		{"1458170917", 2016, time.March, 17, 0, 28, 37, 0},
 	}
 
 	for _, c := range cases {
-		assert.Equal(parseTimestamp(c.ts), c.expected)
+		ts := parseTimestamp(c.ts)
+		expected := time.Date(c.year, c.month, c.day, c.hour, c.minutes, c.seconds, c.millis, ts.Location())
+		assert.Equal(t, ts, expected)
 	}
 }
