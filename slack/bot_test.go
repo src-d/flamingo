@@ -343,3 +343,62 @@ func TestForm(t *testing.T) {
 	assert.Equal(mock.msgs[0].text, " ")
 	assert.Equal(len(mock.msgs[0].params.Attachments), 1)
 }
+
+func TestUpdateForm(t *testing.T) {
+	assert := assert.New(t)
+	mock := newapiMock(nil)
+	bot := &bot{
+		id:  "bar",
+		api: mock,
+		channel: flamingo.Channel{
+			ID: "foo",
+		},
+	}
+
+	assert.Nil(ignoreID(bot.UpdateForm("id", flamingo.Form{
+		Title:   "title",
+		Text:    "text",
+		Color:   "color",
+		Combine: true,
+		Fields: []flamingo.FieldGroup{
+			flamingo.NewButtonGroup("baz", flamingo.Button{
+				Name:  "yes",
+				Value: "yes",
+				Text:  "Yes",
+				Type:  flamingo.PrimaryButton,
+			}),
+			flamingo.NewTextFieldGroup(flamingo.TextField{
+				Title: "title",
+				Value: "value",
+			}),
+		},
+	})))
+
+	assert.Equal(len(mock.msgs), 0)
+	assert.Equal(len(mock.updates), 1)
+	assert.Equal(mock.updates[0].channel, "foo")
+	assert.Equal(mock.updates[0].id, "id")
+	assert.Equal(mock.updates[0].text, " ")
+	assert.Equal(len(mock.updates[0].params.Attachments), 1)
+}
+
+func TestUpdateMessage(t *testing.T) {
+	assert := assert.New(t)
+	mock := newapiMock(nil)
+	bot := &bot{
+		id:  "bar",
+		api: mock,
+		channel: flamingo.Channel{
+			ID: "foo",
+		},
+	}
+
+	assert.Nil(ignoreID(bot.UpdateMessage("id", "new text")))
+
+	assert.Equal(len(mock.msgs), 0)
+	assert.Equal(len(mock.updates), 1)
+	assert.Equal(mock.updates[0].channel, "foo")
+	assert.Equal(mock.updates[0].id, "id")
+	assert.Equal(mock.updates[0].text, "new text")
+	assert.Equal(len(mock.updates[0].params.Attachments), 0)
+}
