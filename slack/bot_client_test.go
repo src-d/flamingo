@@ -138,3 +138,59 @@ func TestHandleRTMEventOpenConvo(t *testing.T) {
 	<-time.After(50 * time.Millisecond)
 	assert.Equal(2, len(client.conversations))
 }
+
+func TestHandleIMCreatedEvent(t *testing.T) {
+	assert := assert.New(t)
+	mock := &slackRTMMock{
+		events: make(chan slack.RTMEvent),
+	}
+
+	ctrl := &helloCtrl{}
+	cli := NewClient("", ClientOptions{Debug: true}).(*slackClient)
+	cli.SetIntroHandler(ctrl)
+
+	client := newBotClient(
+		"aaaa",
+		mock,
+		cli,
+	)
+	defer client.stop()
+
+	mock.events <- slack.RTMEvent{
+		Data: &slack.IMCreatedEvent{
+			Channel: slack.ChannelCreatedInfo{
+				ID: "D345345",
+			},
+		},
+	}
+
+	<-time.After(50 * time.Millisecond)
+	assert.Equal(1, len(client.conversations))
+	assert.Equal(1, ctrl.calledIntro)
+}
+
+func TestHandleGroupJoinedEvent(t *testing.T) {
+	assert := assert.New(t)
+	mock := &slackRTMMock{
+		events: make(chan slack.RTMEvent),
+	}
+
+	ctrl := &helloCtrl{}
+	cli := NewClient("", ClientOptions{Debug: true}).(*slackClient)
+	cli.SetIntroHandler(ctrl)
+
+	client := newBotClient(
+		"aaaa",
+		mock,
+		cli,
+	)
+	defer client.stop()
+
+	ev := slack.RTMEvent{Data: &slack.GroupJoinedEvent{}}
+	ev.Data.(*slack.GroupJoinedEvent).Channel.ID = "G394820"
+	mock.events <- ev
+
+	<-time.After(50 * time.Millisecond)
+	assert.Equal(1, len(client.conversations))
+	assert.Equal(1, ctrl.calledIntro)
+}

@@ -38,6 +38,10 @@ func formToMessage(bot, channel string, form flamingo.Form) slack.PostMessagePar
 		}
 	}
 
+	if len(params.Attachments) > 0 {
+		params.Attachments[len(params.Attachments)-1].Footer = form.Footer
+	}
+
 	return params
 }
 
@@ -59,6 +63,11 @@ func combinedAttachment(bot, channel string, form flamingo.Form) slack.Attachmen
 				a.Actions = append(a.Actions, buttonToAction(f))
 			case flamingo.TextField:
 				a.Fields = append(a.Fields, textFieldToField(f))
+			case flamingo.Image:
+				a.ImageURL = f.URL
+				a.ThumbURL = f.ThumbnailURL
+				a.Title = f.Text
+				a.TitleLink = f.URL
 			}
 		}
 	}
@@ -115,6 +124,11 @@ func groupToAttachment(bot, channel string, group flamingo.FieldGroup) slack.Att
 			a.Actions = append(a.Actions, buttonToAction(f))
 		case flamingo.TextField:
 			a.Fields = append(a.Fields, textFieldToField(f))
+		case flamingo.Image:
+			a.ImageURL = f.URL
+			a.ThumbURL = f.ThumbnailURL
+			a.Title = f.Text
+			a.TitleLink = f.URL
 		}
 	}
 

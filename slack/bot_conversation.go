@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"strings"
 	"time"
 
 	"gopkg.in/inconshreveable/log15.v2"
@@ -20,22 +21,35 @@ type botConversation struct {
 	delegate handlerDelegate
 }
 
-func newBotConversation(bot, channel string, rtm slackRTM, delegate handlerDelegate) (*botConversation, error) {
-	ch, err := rtm.GetChannelInfo(channel)
-	if err != nil {
-		return nil, err
-	}
+func newBotConversation(bot, channelID string, rtm slackRTM, delegate handlerDelegate) (*botConversation, error) {
+	var channel flamingo.Channel
+	// Channel IDs prefixed with C are channels,
+	// prefixed with G are groups and prefixed with D are directs
+	if strings.HasPrefix(channelID, "C") {
+		ch, err := rtm.GetChannelInfo(channelID)
+		if err != nil {
+			return nil, err
+		}
 
-	return &botConversation{
-		rtm: rtm,
-		bot: bot,
-		channel: flamingo.Channel{
+		channel = flamingo.Channel{
 			ID:    ch.ID,
 			Name:  ch.Name,
 			Type:  flamingo.SlackClient,
 			IsDM:  !ch.IsChannel,
 			Extra: ch,
-		},
+		}
+	} else {
+		channel = flamingo.Channel{
+			ID:   channelID,
+			Type: flamingo.SlackClient,
+			IsDM: true,
+		}
+	}
+
+	return &botConversation{
+		rtm:      rtm,
+		bot:      bot,
+		channel:  channel,
 		actions:  make(chan slack.AttachmentActionCallback),
 		messages: make(chan *slack.MessageEvent),
 		shutdown: make(chan struct{}, 1),
@@ -110,6 +124,10 @@ func (c *botConversation) convertMessage(src *slack.MessageEvent) (flamingo.Mess
 		Type:     flamingo.SlackClient,
 		Extra:    user,
 	}, c.channel, src.Msg), nil
+}
+
+func (c *botConversation) handleIntro() {
+	c.delegate.HandleIntro(c.createBot(), c.channel)
 }
 
 func (c *botConversation) stop() {

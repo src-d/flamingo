@@ -31,11 +31,7 @@ func parseTimestamp(timestamp string) time.Time {
 }
 
 func createPostParams(msg flamingo.OutgoingMessage) slack.PostMessageParameters {
-	params := slack.PostMessageParameters{
-		LinkNames: 1,
-		Markdown:  true,
-		AsUser:    true,
-	}
+	params := baseSlackParameters()
 
 	if msg.Sender != nil {
 		params.IconURL = msg.Sender.IconURL
@@ -43,4 +39,23 @@ func createPostParams(msg flamingo.OutgoingMessage) slack.PostMessageParameters 
 	}
 
 	return params
+}
+
+func imageToMessage(img flamingo.Image) slack.PostMessageParameters {
+	params := baseSlackParameters()
+	params.Attachments = append(params.Attachments, slack.Attachment{
+		ImageURL:  img.URL,
+		ThumbURL:  img.ThumbnailURL,
+		Title:     img.Text,
+		TitleLink: img.URL,
+	})
+	return params
+}
+
+func baseSlackParameters() slack.PostMessageParameters {
+	return slack.PostMessageParameters{
+		LinkNames: 1,
+		Markdown:  true,
+		AsUser:    true,
+	}
 }

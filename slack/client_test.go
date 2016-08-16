@@ -13,7 +13,8 @@ import (
 )
 
 type helloCtrl struct {
-	msgs []flamingo.Message
+	msgs        []flamingo.Message
+	calledIntro int
 }
 
 func (*helloCtrl) CanHandle(msg flamingo.Message) bool {
@@ -22,6 +23,11 @@ func (*helloCtrl) CanHandle(msg flamingo.Message) bool {
 
 func (c *helloCtrl) Handle(bot flamingo.Bot, msg flamingo.Message) error {
 	c.msgs = append(c.msgs, msg)
+	return nil
+}
+
+func (c *helloCtrl) HandleIntro(b flamingo.Bot, channel flamingo.Channel) error {
+	c.calledIntro++
 	return nil
 }
 
@@ -59,11 +65,12 @@ func TestActionHandler(t *testing.T) {
 func TestRunAndStopWebhook(t *testing.T) {
 	assert := assert.New(t)
 	cli := newClient("xAB3yVzGS4BQ3O9FACTa8Ho4", ClientOptions{
-		WebhookAddr: "0.0.0.0:8989",
+		WebhookAddr: "127.0.0.1:8989",
 	})
 	go cli.runWebhook()
+	<-time.After(50 * time.Millisecond)
 
-	resp, err := http.Post("http://0.0.0.0:8989", "application/json", bytes.NewBuffer([]byte(testCallback)))
+	resp, err := http.Post("http://127.0.0.1:8989", "application/json", bytes.NewBuffer([]byte(testCallback)))
 	assert.Nil(err)
 	assert.Equal(resp.StatusCode, http.StatusOK)
 
@@ -73,7 +80,7 @@ func TestRunAndStopWebhook(t *testing.T) {
 	client := http.Client{
 		Timeout: 50 * time.Millisecond,
 	}
-	resp, err = client.Post("http://0.0.0.0:8989", "application/json", bytes.NewBuffer([]byte(testCallback)))
+	resp, err = client.Post("http://127.0.0.1:8989", "application/json", bytes.NewBuffer([]byte(testCallback)))
 	assert.NotNil(err)
 }
 
@@ -95,7 +102,7 @@ func (b *clientBotMock) handleAction(channel string, action slack.AttachmentActi
 func TestRunAndStop(t *testing.T) {
 	assert := assert.New(t)
 	cli := newClient("xAB3yVzGS4BQ3O9FACTa8Ho4", ClientOptions{
-		WebhookAddr:   "0.0.0.0:8787",
+		WebhookAddr:   "127.0.0.1:8787",
 		EnableWebhook: true,
 		Debug:         true,
 	})
@@ -111,8 +118,8 @@ func TestRunAndStop(t *testing.T) {
 		stopped = true
 	}()
 
-	<-time.After(20 * time.Millisecond)
-	resp, err := http.Post("http://0.0.0.0:8787", "application/json", bytes.NewBuffer([]byte(testCallback)))
+	<-time.After(50 * time.Millisecond)
+	resp, err := http.Post("http://127.0.0.1:8787", "application/json", bytes.NewBuffer([]byte(testCallback)))
 	assert.Nil(err)
 	assert.Equal(resp.StatusCode, http.StatusOK)
 
@@ -127,6 +134,22 @@ func TestRunAndStop(t *testing.T) {
 
 	assert.True(bot2.stopped)
 	assert.Equal(0, len(bot2.actions))
+}
+
+func TestSetIntroHandler(t *testing.T) {
+	cli := newClient("", ClientOptions{})
+	ctrl := &helloCtrl{}
+	cli.SetIntroHandler(ctrl)
+	assert.Equal(t, reflect.ValueOf(ctrl).Pointer(), reflect.ValueOf(cli.introHandler).Pointer())
+}
+
+func TestHandleIntro(t *testing.T) {
+	cli := newClient("", ClientOptions{})
+	ctrl := &helloCtrl{}
+	cli.HandleIntro(nil, flamingo.Channel{})
+	cli.SetIntroHandler(ctrl)
+	cli.HandleIntro(nil, flamingo.Channel{})
+	assert.Equal(t, 1, ctrl.calledIntro)
 }
 
 func newClient(token string, options ClientOptions) *slackClient {

@@ -23,17 +23,31 @@ func TestCreatePostParams(t *testing.T) {
 }
 
 func TestParseTimestamp(t *testing.T) {
-	assert := assert.New(t)
-
 	cases := []struct {
 		ts       string
 		expected time.Time
 	}{
-		{"1458170917.164398", time.Date(2016, time.March, 17, 0, 28, 37, 164398, time.Local)},
-		{"1458170917", time.Date(2016, time.March, 17, 0, 28, 37, 0, time.Local)},
+		{"1458170917.164398", time.Unix(1458170917, 164398)},
+		{"1458170917", time.Unix(1458170917, 0)},
 	}
 
 	for _, c := range cases {
-		assert.Equal(parseTimestamp(c.ts), c.expected)
+		assert.Equal(t, parseTimestamp(c.ts), c.expected)
 	}
+}
+
+func TestImageToMessage(t *testing.T) {
+	assert := assert.New(t)
+
+	params := imageToMessage(flamingo.Image{
+		ThumbnailURL: "foo",
+		URL:          "bar",
+		Text:         "baz",
+	})
+
+	assert.Equal(1, len(params.Attachments))
+	assert.Equal("bar", params.Attachments[0].ImageURL)
+	assert.Equal("baz", params.Attachments[0].Title)
+	assert.Equal("bar", params.Attachments[0].TitleLink)
+	assert.Equal("foo", params.Attachments[0].ThumbURL)
 }
