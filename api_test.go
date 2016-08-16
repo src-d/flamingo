@@ -30,6 +30,16 @@ func TestButtonGroup(t *testing.T) {
 	assert.Equal(ButtonGroup, g.Type())
 }
 
+func TestImage(t *testing.T) {
+	assert := assert.New(t)
+
+	g := Image{}
+
+	assert.Equal("", g.ID())
+	assert.Equal(1, len(g.Items()))
+	assert.Equal(ImageGroup, g.Type())
+}
+
 func TestTextFieldGroup(t *testing.T) {
 	assert := assert.New(t)
 

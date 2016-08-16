@@ -15,10 +15,15 @@ import (
 	"github.com/mvader/slack"
 )
 
+// ClientOptions are the configurable options of the slack client.
 type ClientOptions struct {
+	// EnableWebhook will start the webhook endpoint if true.
 	EnableWebhook bool
-	WebhookAddr   string
-	Debug         bool
+	// WebhookAddr is the address on which the webhook will be run. Required
+	// if EnableWebhook is true.
+	WebhookAddr string
+	// Debug will print extra debug log messages.
+	Debug bool
 }
 
 type clientBot interface {
@@ -47,6 +52,7 @@ type slackClient struct {
 	introHandler    flamingo.IntroHandler
 }
 
+// NewClient creates a new Slack Client with the given token and options.
 func NewClient(token string, options ClientOptions) flamingo.Client {
 	if options.WebhookAddr == "" {
 		options.WebhookAddr = ":8080"

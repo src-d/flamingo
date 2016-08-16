@@ -9,14 +9,16 @@ import (
 	"github.com/mvader/slack"
 )
 
+// WebhookService is a service to handle slack interactive messages callbacks.
 type WebhookService struct {
-	Token     string
+	token     string
 	callbacks chan slack.AttachmentActionCallback
 }
 
+// NewWebhookService returns a new WebhookService with the given token.
 func NewWebhookService(token string) *WebhookService {
 	return &WebhookService{
-		Token:     token,
+		token:     token,
 		callbacks: make(chan slack.AttachmentActionCallback, 1),
 	}
 }
@@ -34,7 +36,7 @@ func (s *WebhookService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if callback.Token != s.Token {
+	if callback.Token != s.token {
 		log15.Warn("received action callback token does not match", "token", callback.Token)
 		w.WriteHeader(http.StatusUnauthorized)
 		return
