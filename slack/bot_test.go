@@ -83,6 +83,23 @@ func TestSay(t *testing.T) {
 	assert.Equal(mock.msgs[1].text, "hi there you too")
 }
 
+func TestImage(t *testing.T) {
+	assert := assert.New(t)
+	mock := newapiMock(nil)
+	bot := &bot{
+		api: mock,
+		channel: flamingo.Channel{
+			ID: "foo",
+		},
+	}
+
+	assert.Nil(ignoreID(bot.Image(flamingo.Image{URL: "foo"})))
+
+	assert.Equal(len(mock.msgs), 1)
+	assert.Equal(len(mock.msgs[0].params.Attachments), 1)
+	assert.Equal(mock.msgs[0].params.Attachments[0].ImageURL, "foo")
+}
+
 func TestReply(t *testing.T) {
 	assert := assert.New(t)
 	mock := newapiMock(nil)
