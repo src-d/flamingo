@@ -68,6 +68,7 @@ func TestRunAndStopWebhook(t *testing.T) {
 		WebhookAddr: "127.0.0.1:8989",
 	})
 	go cli.runWebhook()
+	<-time.After(50 * time.Millisecond)
 
 	resp, err := http.Post("http://127.0.0.1:8989", "application/json", bytes.NewBuffer([]byte(testCallback)))
 	assert.Nil(err)
@@ -117,7 +118,7 @@ func TestRunAndStop(t *testing.T) {
 		stopped = true
 	}()
 
-	<-time.After(20 * time.Millisecond)
+	<-time.After(50 * time.Millisecond)
 	resp, err := http.Post("http://127.0.0.1:8787", "application/json", bytes.NewBuffer([]byte(testCallback)))
 	assert.Nil(err)
 	assert.Equal(resp.StatusCode, http.StatusOK)
