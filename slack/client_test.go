@@ -92,10 +92,11 @@ func TestRunAndStopWebhook(t *testing.T) {
 
 type clientBotMock struct {
 	sync.RWMutex
-	stopped     bool
-	actions     []slack.AttachmentActionCallback
-	channels    []string
-	handledJobs int
+	stopped       bool
+	actions       []slack.AttachmentActionCallback
+	channels      []string
+	handledJobs   int
+	conversations []string
 }
 
 func (b *clientBotMock) stop() {
@@ -115,6 +116,13 @@ func (b *clientBotMock) handleJob(job flamingo.Job) {
 	b.Lock()
 	defer b.Unlock()
 	b.handledJobs++
+}
+
+func (b *clientBotMock) addConversation(id string) error {
+	b.Lock()
+	defer b.Unlock()
+	b.conversations = append(b.conversations, id)
+	return nil
 }
 
 func TestRunAndStop(t *testing.T) {

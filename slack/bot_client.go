@@ -175,6 +175,11 @@ func (c *botClient) newConversation(channel string) (*botConversation, error) {
 	return conv, nil
 }
 
+func (c *botClient) addConversation(id string) error {
+	_, err := c.newConversation(id)
+	return err
+}
+
 func (c *botClient) stop() {
 	c.shutdown <- struct{}{}
 	close(c.shutdown)
