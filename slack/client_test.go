@@ -226,6 +226,19 @@ func TestLoadFromStorage(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestSave(t *testing.T) {
+	cli := newClient("", ClientOptions{})
+	storage := storage.NewMemory()
+	cli.SetStorage(storage)
+	cli.AddBot("1", "foo")
+	cli.bots["1"].addConversation("2")
+
+	ok, _ := storage.BotExists(flamingo.StoredBot{ID: "1"})
+	assert.True(t, ok)
+	ok, _ = storage.ConversationExists(flamingo.StoredConversation{ID: "2"})
+	assert.True(t, ok)
+}
+
 func newClient(token string, options ClientOptions) *slackClient {
 	options.Debug = true
 	return NewClient(token, options).(*slackClient)

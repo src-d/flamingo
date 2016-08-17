@@ -154,6 +154,24 @@ func (c *slackClient) AddBot(id, token string) {
 	c.Lock()
 	defer c.Unlock()
 
+	bot := flamingo.StoredBot{
+		ID:        id,
+		Token:     token,
+		CreatedAt: time.Now(),
+	}
+	ok, err := c.storage.BotExists(bot)
+	if err != nil {
+		log15.Error("unable to check if bot exists", "id", id, "err", err.Error())
+		return
+	}
+
+	if !ok {
+		if err := c.storage.StoreBot(bot); err != nil {
+			log15.Error("unable to add bot", "id", id, "err", err.Error())
+			return
+		}
+	}
+
 	client := slack.New(token)
 	client.SetDebug(false)
 	rtm := client.NewRTM()
@@ -179,6 +197,10 @@ func (c *slackClient) AddScheduledJob(schedule flamingo.ScheduleTime, job flamin
 		job:      job,
 		schedule: schedule,
 	})
+}
+
+func (c *slackClient) Storage() flamingo.Storage {
+	return c.storage
 }
 
 func (c *slackClient) Stop() error {

@@ -19,6 +19,7 @@ type handlerDelegate interface {
 	ControllerFor(flamingo.Message) (flamingo.Controller, bool)
 	ActionHandler(string) (flamingo.ActionHandler, bool)
 	HandleIntro(flamingo.Bot, flamingo.Channel)
+	Storage() flamingo.Storage
 }
 
 type botClient struct {
@@ -168,6 +169,23 @@ func (c *botClient) newConversation(channel string) (*botConversation, error) {
 	conv, err := newBotConversation(c.id, channel, c.rtm, c.delegate)
 	if err != nil {
 		return nil, err
+	}
+
+	storage := c.delegate.Storage()
+	conversation := flamingo.StoredConversation{
+		ID:        channel,
+		BotID:     c.id,
+		CreatedAt: time.Now(),
+	}
+	ok, err := storage.ConversationExists(conversation)
+	if err != nil {
+		return nil, err
+	}
+
+	if !ok {
+		if err := storage.StoreConversation(conversation); err != nil {
+			return nil, err
+		}
 	}
 
 	c.conversations[channel] = conv
