@@ -25,6 +25,11 @@ type Client interface {
 	// SetIntroHandler sets the IntroHandler for the client.
 	SetIntroHandler(IntroHandler)
 
+	// SetStorage sets the storage to be used to store conversations and bots.
+	// In this package clients, if the Storage is added *before* calling the
+	// Run method bots and conversations will be loaded from there.
+	SetStorage(Storage)
+
 	// AddScheduledJob will run the given Job forever after the given
 	// duration from the last execution.
 	AddScheduledJob(ScheduleTime, Job)

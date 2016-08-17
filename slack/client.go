@@ -12,6 +12,7 @@ import (
 	"gopkg.in/inconshreveable/log15.v2"
 
 	"github.com/mvader/flamingo"
+	"github.com/mvader/flamingo/storage"
 	"github.com/mvader/slack"
 )
 
@@ -29,6 +30,7 @@ type ClientOptions struct {
 type clientBot interface {
 	handleAction(string, slack.AttachmentActionCallback)
 	handleJob(flamingo.Job)
+	addConversation(string) error
 	stop()
 }
 
@@ -53,6 +55,7 @@ type slackClient struct {
 	introHandler    flamingo.IntroHandler
 	scheduledJobs   []*scheduledJob
 	scheduledWg     *sync.WaitGroup
+	storage         flamingo.Storage
 }
 
 type scheduledJob struct {
@@ -77,10 +80,17 @@ func NewClient(token string, options ClientOptions) flamingo.Client {
 		shutdown:        make(chan struct{}, 1),
 		shutdownWebhook: make(chan struct{}, 1),
 		scheduledWg:     new(sync.WaitGroup),
+		storage:         storage.NewMemory(),
 	}
 
 	cli.SetLogOutput(nil)
 	return cli
+}
+
+func (s *slackClient) SetStorage(storage flamingo.Storage) {
+	s.Lock()
+	defer s.Unlock()
+	s.storage = storage
 }
 
 func (c *slackClient) SetLogOutput(w io.Writer) {
@@ -144,6 +154,24 @@ func (c *slackClient) AddBot(id, token string) {
 	c.Lock()
 	defer c.Unlock()
 
+	bot := flamingo.StoredBot{
+		ID:        id,
+		Token:     token,
+		CreatedAt: time.Now(),
+	}
+	ok, err := c.storage.BotExists(bot)
+	if err != nil {
+		log15.Error("unable to check if bot exists", "id", id, "err", err.Error())
+		return
+	}
+
+	if !ok {
+		if err := c.storage.StoreBot(bot); err != nil {
+			log15.Error("unable to add bot", "id", id, "err", err.Error())
+			return
+		}
+	}
+
 	client := slack.New(token)
 	client.SetDebug(false)
 	rtm := client.NewRTM()
@@ -169,6 +197,10 @@ func (c *slackClient) AddScheduledJob(schedule flamingo.ScheduleTime, job flamin
 		job:      job,
 		schedule: schedule,
 	})
+}
+
+func (c *slackClient) Storage() flamingo.Storage {
+	return c.storage
 }
 
 func (c *slackClient) Stop() error {
@@ -260,8 +292,40 @@ func (c *slackClient) runScheduledJob(j scheduledJob) {
 	}
 }
 
+func (c *slackClient) loadFromStorage() error {
+	log15.Info("Loading data from storage...")
+	defer log15.Info("Loaded data from storage...")
+
+	bots, err := c.storage.LoadBots()
+	if err != nil {
+		return err
+	}
+
+	for _, b := range bots {
+		c.AddBot(b.ID, b.Token)
+		convs, err := c.storage.LoadConversations(b)
+		if err != nil {
+			return err
+		}
+
+		for _, conv := range convs {
+			if err := c.bots[b.ID].addConversation(conv.ID); err != nil {
+				log15.Error("error starting conversation", "conversation", conv.ID, "bot", b.ID)
+			}
+		}
+	}
+
+	return nil
+}
+
 func (c *slackClient) Run() error {
 	log15.Info("Starting flamingo slack client")
+	if c.storage != nil {
+		if err := c.loadFromStorage(); err != nil {
+			return err
+		}
+	}
+
 	if c.options.EnableWebhook {
 		log15.Info("Starting webhook server endpoint", "address", c.options.WebhookAddr)
 		go c.runWebhook()

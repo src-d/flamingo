@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mvader/flamingo"
+	"github.com/mvader/flamingo/storage"
 	"github.com/mvader/slack"
 	"github.com/stretchr/testify/assert"
 )
@@ -92,10 +93,11 @@ func TestRunAndStopWebhook(t *testing.T) {
 
 type clientBotMock struct {
 	sync.RWMutex
-	stopped     bool
-	actions     []slack.AttachmentActionCallback
-	channels    []string
-	handledJobs int
+	stopped       bool
+	actions       []slack.AttachmentActionCallback
+	channels      []string
+	handledJobs   int
+	conversations []string
 }
 
 func (b *clientBotMock) stop() {
@@ -115,6 +117,13 @@ func (b *clientBotMock) handleJob(job flamingo.Job) {
 	b.Lock()
 	defer b.Unlock()
 	b.handledJobs++
+}
+
+func (b *clientBotMock) addConversation(id string) error {
+	b.Lock()
+	defer b.Unlock()
+	b.conversations = append(b.conversations, id)
+	return nil
 }
 
 func TestRunAndStop(t *testing.T) {
@@ -201,6 +210,33 @@ func TestScheduledJobs(t *testing.T) {
 	mock.RLock()
 	defer mock.RUnlock()
 	assert.Equal(t, 1, mock.handledJobs)
+}
+
+func TestLoadFromStorage(t *testing.T) {
+	cli := newClient("", ClientOptions{})
+	storage := storage.NewMemory()
+	storage.StoreBot(flamingo.StoredBot{ID: "1", Token: "foo"})
+	storage.StoreConversation(flamingo.StoredConversation{ID: "2", BotID: "1"})
+	cli.SetStorage(storage)
+	assert.Nil(t, cli.loadFromStorage())
+	_, ok := cli.bots["1"]
+	assert.True(t, ok)
+
+	_, ok = cli.bots["1"].(*botClient).conversations["2"]
+	assert.True(t, ok)
+}
+
+func TestSave(t *testing.T) {
+	cli := newClient("", ClientOptions{})
+	storage := storage.NewMemory()
+	cli.SetStorage(storage)
+	cli.AddBot("1", "foo")
+	cli.bots["1"].addConversation("2")
+
+	ok, _ := storage.BotExists(flamingo.StoredBot{ID: "1"})
+	assert.True(t, ok)
+	ok, _ = storage.ConversationExists(flamingo.StoredConversation{ID: "2"})
+	assert.True(t, ok)
 }
 
 func newClient(token string, options ClientOptions) *slackClient {
