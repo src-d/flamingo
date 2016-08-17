@@ -1,7 +1,6 @@
 package slack
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -130,7 +129,6 @@ func (c *botClient) handleMessageEvent(evt *slack.MessageEvent) {
 	conv, ok := c.conversations[evt.Channel]
 	c.RUnlock()
 	if !ok {
-		log15.Info("this", "that", fmt.Sprintf("%#v", evt.Channel), "those", evt.SubType)
 		var err error
 		conv, err = c.newConversation(evt.Channel)
 		if err != nil {
