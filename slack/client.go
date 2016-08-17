@@ -52,10 +52,11 @@ type slackClient struct {
 	shutdownWebhook chan struct{}
 	introHandler    flamingo.IntroHandler
 	scheduledJobs   []*scheduledJob
-	scheduledWg     sync.WaitGroup
+	scheduledWg     *sync.WaitGroup
 }
 
 type scheduledJob struct {
+	mut      *sync.RWMutex
 	job      flamingo.Job
 	schedule flamingo.ScheduleTime
 	stop     chan struct{}
@@ -75,6 +76,7 @@ func NewClient(token string, options ClientOptions) flamingo.Client {
 		bots:            make(map[string]clientBot),
 		shutdown:        make(chan struct{}, 1),
 		shutdownWebhook: make(chan struct{}, 1),
+		scheduledWg:     new(sync.WaitGroup),
 	}
 
 	cli.SetLogOutput(nil)
@@ -163,6 +165,7 @@ func (c *slackClient) AddScheduledJob(schedule flamingo.ScheduleTime, job flamin
 	c.Lock()
 	defer c.Unlock()
 	c.scheduledJobs = append(c.scheduledJobs, &scheduledJob{
+		mut:      new(sync.RWMutex),
 		job:      job,
 		schedule: schedule,
 	})
@@ -176,11 +179,16 @@ func (c *slackClient) Stop() error {
 	}
 
 	for _, j := range c.scheduledJobs {
+		j.mut.RLock()
 		if j.stop != nil {
 			j.stop <- struct{}{}
 		}
+		j.mut.RUnlock()
 	}
+
+	c.RLock()
 	c.scheduledWg.Wait()
+	c.RUnlock()
 	c.shutdown <- struct{}{}
 	c.shutdownWebhook <- struct{}{}
 	return nil
@@ -213,8 +221,10 @@ func (c *slackClient) runWebhook() {
 func (c *slackClient) runScheduledJobs() {
 	c.Lock()
 	defer c.Unlock()
-	for _, j := range c.scheduledJobs {
-		j.stop = make(chan struct{}, 1)
+	for i, j := range c.scheduledJobs {
+		c.scheduledJobs[i].mut.Lock()
+		c.scheduledJobs[i].stop = make(chan struct{}, 1)
+		c.scheduledJobs[i].mut.Unlock()
 		c.scheduledWg.Add(1)
 		go c.runScheduledJob(*j)
 	}
@@ -241,6 +251,8 @@ func (c *slackClient) runScheduledJob(j scheduledJob) {
 			interval = j.schedule.Next(now).Sub(now)
 
 		case <-j.stop:
+			j.mut.Lock()
+			defer j.mut.Unlock()
 			close(j.stop)
 			c.scheduledWg.Done()
 			return
