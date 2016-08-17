@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/mvader/flamingo"
+	"github.com/mvader/flamingo/storage"
 	"github.com/mvader/slack"
 	"github.com/stretchr/testify/assert"
 )
@@ -209,6 +210,20 @@ func TestScheduledJobs(t *testing.T) {
 	mock.RLock()
 	defer mock.RUnlock()
 	assert.Equal(t, 1, mock.handledJobs)
+}
+
+func TestLoadFromStorage(t *testing.T) {
+	cli := newClient("", ClientOptions{})
+	storage := storage.NewMemory()
+	storage.StoreBot(flamingo.StoredBot{ID: "1", Token: "foo"})
+	storage.StoreConversation(flamingo.StoredConversation{ID: "2", BotID: "1"})
+	cli.SetStorage(storage)
+	assert.Nil(t, cli.loadFromStorage())
+	_, ok := cli.bots["1"]
+	assert.True(t, ok)
+
+	_, ok = cli.bots["1"].(*botClient).conversations["2"]
+	assert.True(t, ok)
 }
 
 func newClient(token string, options ClientOptions) *slackClient {
