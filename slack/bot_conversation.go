@@ -130,6 +130,12 @@ func (c *botConversation) handleIntro() {
 	c.delegate.HandleIntro(c.createBot(), c.channel)
 }
 
+func (c *botConversation) handleJob(job flamingo.Job) {
+	if err := job(c.createBot(), c.channel); err != nil {
+		log15.Error("error running job", "bot", c.bot, "channel", c.channel.ID, "err", err.Error())
+	}
+}
+
 func (c *botConversation) stop() {
 	c.shutdown <- struct{}{}
 	close(c.shutdown)

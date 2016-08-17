@@ -28,6 +28,7 @@ type ClientOptions struct {
 
 type clientBot interface {
 	handleAction(string, slack.AttachmentActionCallback)
+	handleJob(flamingo.Job)
 	stop()
 }
 
@@ -50,6 +51,15 @@ type slackClient struct {
 	shutdown        chan struct{}
 	shutdownWebhook chan struct{}
 	introHandler    flamingo.IntroHandler
+	scheduledJobs   []*scheduledJob
+	scheduledWg     *sync.WaitGroup
+}
+
+type scheduledJob struct {
+	mut      *sync.RWMutex
+	job      flamingo.Job
+	schedule flamingo.ScheduleTime
+	stop     chan struct{}
 }
 
 // NewClient creates a new Slack Client with the given token and options.
@@ -66,6 +76,7 @@ func NewClient(token string, options ClientOptions) flamingo.Client {
 		bots:            make(map[string]clientBot),
 		shutdown:        make(chan struct{}, 1),
 		shutdownWebhook: make(chan struct{}, 1),
+		scheduledWg:     new(sync.WaitGroup),
 	}
 
 	cli.SetLogOutput(nil)
@@ -150,6 +161,16 @@ func (c *slackClient) HandleIntro(bot flamingo.Bot, channel flamingo.Channel) {
 	}
 }
 
+func (c *slackClient) AddScheduledJob(schedule flamingo.ScheduleTime, job flamingo.Job) {
+	c.Lock()
+	defer c.Unlock()
+	c.scheduledJobs = append(c.scheduledJobs, &scheduledJob{
+		mut:      new(sync.RWMutex),
+		job:      job,
+		schedule: schedule,
+	})
+}
+
 func (c *slackClient) Stop() error {
 	for id, bot := range c.bots {
 		log15.Debug("shutting down bot", "id", id)
@@ -157,6 +178,17 @@ func (c *slackClient) Stop() error {
 		log15.Debug("shut down bot", "id", id)
 	}
 
+	for _, j := range c.scheduledJobs {
+		j.mut.RLock()
+		if j.stop != nil {
+			j.stop <- struct{}{}
+		}
+		j.mut.RUnlock()
+	}
+
+	c.RLock()
+	c.scheduledWg.Wait()
+	c.RUnlock()
 	c.shutdown <- struct{}{}
 	c.shutdownWebhook <- struct{}{}
 	return nil
@@ -186,6 +218,48 @@ func (c *slackClient) runWebhook() {
 	}
 }
 
+func (c *slackClient) runScheduledJobs() {
+	c.Lock()
+	defer c.Unlock()
+	for i, j := range c.scheduledJobs {
+		c.scheduledJobs[i].mut.Lock()
+		c.scheduledJobs[i].stop = make(chan struct{}, 1)
+		c.scheduledJobs[i].mut.Unlock()
+		c.scheduledWg.Add(1)
+		go c.runScheduledJob(*j)
+	}
+}
+
+func (c *slackClient) runScheduledJob(j scheduledJob) {
+	now := time.Now()
+	interval := j.schedule.Next(now).Sub(now)
+	for {
+		select {
+		case <-time.After(interval):
+			wg := new(sync.WaitGroup)
+
+			for _, b := range c.bots {
+				wg.Add(1)
+				go func(b clientBot) {
+					b.handleJob(j.job)
+					wg.Done()
+				}(b)
+			}
+
+			wg.Wait()
+			now := time.Now()
+			interval = j.schedule.Next(now).Sub(now)
+
+		case <-j.stop:
+			j.mut.Lock()
+			defer j.mut.Unlock()
+			close(j.stop)
+			c.scheduledWg.Done()
+			return
+		}
+	}
+}
+
 func (c *slackClient) Run() error {
 	log15.Info("Starting flamingo slack client")
 	if c.options.EnableWebhook {
@@ -193,12 +267,16 @@ func (c *slackClient) Run() error {
 		go c.runWebhook()
 	}
 
+	if len(c.scheduledJobs) > 0 {
+		c.runScheduledJobs()
+	}
+
 	actions := c.webhook.Consume()
 	for {
 		select {
 		case action := <-actions:
 			log15.Debug("action received", "callback", action.CallbackID)
-			go c.handleActionCallback(action)
+			c.handleActionCallback(action)
 
 		case <-c.shutdown:
 			return nil
@@ -209,9 +287,6 @@ func (c *slackClient) Run() error {
 }
 
 func (c *slackClient) handleActionCallback(action slack.AttachmentActionCallback) {
-	c.Lock()
-	defer c.Unlock()
-
 	parts := strings.Split(action.CallbackID, "::")
 	if len(parts) < 3 {
 		log15.Error("invalid action", "callback", action.CallbackID)
@@ -219,7 +294,9 @@ func (c *slackClient) handleActionCallback(action slack.AttachmentActionCallback
 	}
 
 	bot, channel, id := parts[0], parts[1], parts[2]
+	c.RLock()
 	b, ok := c.bots[bot]
+	c.RUnlock()
 	if !ok {
 		log15.Warn("bot not found", "id", bot)
 		return

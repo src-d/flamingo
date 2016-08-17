@@ -1,9 +1,12 @@
 package slack
 
 import (
+	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/mvader/flamingo"
 	"github.com/mvader/slack"
 	"github.com/stretchr/testify/assert"
 )
@@ -136,7 +139,9 @@ func TestHandleRTMEventOpenConvo(t *testing.T) {
 	}
 
 	<-time.After(50 * time.Millisecond)
+	client.Lock()
 	assert.Equal(2, len(client.conversations))
+	client.Unlock()
 }
 
 func TestHandleIMCreatedEvent(t *testing.T) {
@@ -165,8 +170,12 @@ func TestHandleIMCreatedEvent(t *testing.T) {
 	}
 
 	<-time.After(50 * time.Millisecond)
+	client.Lock()
 	assert.Equal(1, len(client.conversations))
+	client.Unlock()
+	ctrl.Lock()
 	assert.Equal(1, ctrl.calledIntro)
+	ctrl.Unlock()
 }
 
 func TestHandleGroupJoinedEvent(t *testing.T) {
@@ -191,6 +200,32 @@ func TestHandleGroupJoinedEvent(t *testing.T) {
 	mock.events <- ev
 
 	<-time.After(50 * time.Millisecond)
+	client.Lock()
 	assert.Equal(1, len(client.conversations))
+	client.Unlock()
+	ctrl.Lock()
 	assert.Equal(1, ctrl.calledIntro)
+	ctrl.Unlock()
+}
+
+func TestHandleJob(t *testing.T) {
+	client := &botClient{
+		conversations: make(map[string]*botConversation),
+	}
+
+	client.conversations["bbbb"] = &botConversation{}
+	client.conversations["aaaa"] = &botConversation{}
+
+	var executed int32
+	client.handleJob(func(_ flamingo.Bot, _ flamingo.Channel) error {
+		atomic.AddInt32(&executed, 1)
+		return nil
+	})
+
+	client.handleJob(func(_ flamingo.Bot, _ flamingo.Channel) error {
+		atomic.AddInt32(&executed, 1)
+		return errors.New("foo")
+	})
+
+	assert.Equal(t, int32(4), atomic.LoadInt32(&executed))
 }

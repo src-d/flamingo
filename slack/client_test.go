@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 )
 
 type helloCtrl struct {
+	sync.RWMutex
 	msgs        []flamingo.Message
 	calledIntro int
 }
@@ -22,11 +24,15 @@ func (*helloCtrl) CanHandle(msg flamingo.Message) bool {
 }
 
 func (c *helloCtrl) Handle(bot flamingo.Bot, msg flamingo.Message) error {
+	c.Lock()
+	defer c.Unlock()
 	c.msgs = append(c.msgs, msg)
 	return nil
 }
 
 func (c *helloCtrl) HandleIntro(b flamingo.Bot, channel flamingo.Channel) error {
+	c.Lock()
+	defer c.Unlock()
 	c.calledIntro++
 	return nil
 }
@@ -85,18 +91,30 @@ func TestRunAndStopWebhook(t *testing.T) {
 }
 
 type clientBotMock struct {
-	stopped  bool
-	actions  []slack.AttachmentActionCallback
-	channels []string
+	sync.RWMutex
+	stopped     bool
+	actions     []slack.AttachmentActionCallback
+	channels    []string
+	handledJobs int
 }
 
 func (b *clientBotMock) stop() {
+	b.Lock()
+	defer b.Unlock()
 	b.stopped = true
 }
 
 func (b *clientBotMock) handleAction(channel string, action slack.AttachmentActionCallback) {
+	b.Lock()
+	defer b.Unlock()
 	b.channels = append(b.channels, channel)
 	b.actions = append(b.actions, action)
+}
+
+func (b *clientBotMock) handleJob(job flamingo.Job) {
+	b.Lock()
+	defer b.Unlock()
+	b.handledJobs++
 }
 
 func TestRunAndStop(t *testing.T) {
@@ -112,10 +130,10 @@ func TestRunAndStop(t *testing.T) {
 	cli.bots["bot"] = bot
 	cli.bots["bot2"] = bot2
 
-	var stopped bool
+	var stopped = make(chan struct{}, 1)
 	go func() {
 		cli.Run()
-		stopped = true
+		stopped <- struct{}{}
 	}()
 
 	<-time.After(50 * time.Millisecond)
@@ -126,7 +144,11 @@ func TestRunAndStop(t *testing.T) {
 	assert.Nil(cli.Stop())
 	<-time.After(50 * time.Millisecond)
 
-	assert.True(stopped)
+	select {
+	case <-stopped:
+	case <-time.After(50 * time.Millisecond):
+		assert.FailNow("did not stop")
+	}
 	assert.True(bot.stopped)
 	assert.Equal(1, len(bot.actions))
 	assert.Equal("test_callback", bot.actions[0].CallbackID)
@@ -150,6 +172,35 @@ func TestHandleIntro(t *testing.T) {
 	cli.SetIntroHandler(ctrl)
 	cli.HandleIntro(nil, flamingo.Channel{})
 	assert.Equal(t, 1, ctrl.calledIntro)
+}
+
+func TestStartScheduledJobsAndStop(t *testing.T) {
+	cli := newClient("", ClientOptions{})
+	cli.AddScheduledJob(flamingo.NewIntervalSchedule(1*time.Second), func(_ flamingo.Bot, _ flamingo.Channel) error {
+		assert.FailNow(t, "scheduled job was run")
+		return nil
+	})
+
+	go cli.Run()
+	<-time.After(50 * time.Millisecond)
+	cli.Stop()
+}
+
+func TestScheduledJobs(t *testing.T) {
+	cli := newClient("", ClientOptions{})
+	cli.AddScheduledJob(flamingo.NewIntervalSchedule(50*time.Millisecond), func(_ flamingo.Bot, _ flamingo.Channel) error {
+		return nil
+	})
+	mock := &clientBotMock{}
+	cli.bots["foo"] = mock
+
+	go cli.Run()
+	defer cli.Stop()
+
+	<-time.After(90 * time.Millisecond)
+	mock.RLock()
+	defer mock.RUnlock()
+	assert.Equal(t, 1, mock.handledJobs)
 }
 
 func newClient(token string, options ClientOptions) *slackClient {
