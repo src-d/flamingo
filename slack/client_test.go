@@ -99,6 +99,10 @@ func (b *clientBotMock) handleAction(channel string, action slack.AttachmentActi
 	b.actions = append(b.actions, action)
 }
 
+func (b *clientBotMock) handleJob(job flamingo.Job) {
+
+}
+
 func TestRunAndStop(t *testing.T) {
 	assert := assert.New(t)
 	cli := newClient("xAB3yVzGS4BQ3O9FACTa8Ho4", ClientOptions{

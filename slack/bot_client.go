@@ -78,6 +78,20 @@ func (c *botClient) handleAction(channel string, action slack.AttachmentActionCa
 	conv.actions <- action
 }
 
+func (c *botClient) handleJob(job flamingo.Job) {
+	c.Lock()
+	var wg sync.WaitGroup
+	for _, conv := range c.conversations {
+		wg.Add(1)
+		go func(conv *botConversation) {
+			conv.handleJob(job)
+			wg.Done()
+		}(conv)
+	}
+	c.Unlock()
+	wg.Wait()
+}
+
 func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 	c.Lock()
 	defer c.Unlock()

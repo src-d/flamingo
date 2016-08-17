@@ -28,6 +28,7 @@ type ClientOptions struct {
 
 type clientBot interface {
 	handleAction(string, slack.AttachmentActionCallback)
+	handleJob(flamingo.Job)
 	stop()
 }
 
@@ -50,6 +51,14 @@ type slackClient struct {
 	shutdown        chan struct{}
 	shutdownWebhook chan struct{}
 	introHandler    flamingo.IntroHandler
+	scheduledJobs   []*scheduledJob
+	scheduledWg     sync.WaitGroup
+}
+
+type scheduledJob struct {
+	job      flamingo.Job
+	schedule flamingo.ScheduleTime
+	stop     chan struct{}
 }
 
 // NewClient creates a new Slack Client with the given token and options.
@@ -150,6 +159,15 @@ func (c *slackClient) HandleIntro(bot flamingo.Bot, channel flamingo.Channel) {
 	}
 }
 
+func (c *slackClient) AddScheduledJob(schedule flamingo.ScheduleTime, job flamingo.Job) {
+	c.Lock()
+	defer c.Unlock()
+	c.scheduledJobs = append(c.scheduledJobs, &scheduledJob{
+		job:      job,
+		schedule: schedule,
+	})
+}
+
 func (c *slackClient) Stop() error {
 	for id, bot := range c.bots {
 		log15.Debug("shutting down bot", "id", id)
@@ -157,6 +175,12 @@ func (c *slackClient) Stop() error {
 		log15.Debug("shut down bot", "id", id)
 	}
 
+	for _, j := range c.scheduledJobs {
+		if j.stop != nil {
+			j.stop <- struct{}{}
+		}
+	}
+	c.scheduledWg.Wait()
 	c.shutdown <- struct{}{}
 	c.shutdownWebhook <- struct{}{}
 	return nil
@@ -186,11 +210,53 @@ func (c *slackClient) runWebhook() {
 	}
 }
 
+func (c *slackClient) runScheduledJobs() {
+	c.Lock()
+	defer c.Unlock()
+	for _, j := range c.scheduledJobs {
+		j.stop = make(chan struct{}, 1)
+		c.scheduledWg.Add(1)
+		go c.runScheduledJob(*j)
+	}
+}
+
+func (c *slackClient) runScheduledJob(j scheduledJob) {
+	now := time.Now()
+	interval := j.schedule.Next(now).Sub(now)
+	for {
+		select {
+		case <-time.After(interval):
+			wg := new(sync.WaitGroup)
+
+			for _, b := range c.bots {
+				wg.Add(1)
+				go func(b clientBot) {
+					b.handleJob(j.job)
+					wg.Done()
+				}(b)
+			}
+
+			wg.Wait()
+			now := time.Now()
+			interval = j.schedule.Next(now).Sub(now)
+
+		case <-j.stop:
+			close(j.stop)
+			c.scheduledWg.Done()
+			return
+		}
+	}
+}
+
 func (c *slackClient) Run() error {
 	log15.Info("Starting flamingo slack client")
 	if c.options.EnableWebhook {
 		log15.Info("Starting webhook server endpoint", "address", c.options.WebhookAddr)
 		go c.runWebhook()
+	}
+
+	if len(c.scheduledJobs) > 0 {
+		c.runScheduledJobs()
 	}
 
 	actions := c.webhook.Consume()

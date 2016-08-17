@@ -157,8 +157,13 @@ type Image struct {
 
 func (f Image) isField() {}
 
+// ID always returns an empty string since Images have no ID. This method is just
+// implemented to fulfill the FieldGroup interface.
 func (f Image) ID() string { return "" }
 
+// Items returns a slice with only the image itself, which is both a fieldgroup and
+// a field.
 func (f Image) Items() []Field { return []Field{f} }
 
+// Type returns the ImageGroup type.
 func (f Image) Type() FieldGroupType { return ImageGroup }
