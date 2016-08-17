@@ -42,7 +42,14 @@ func (s *fileStorage) load() error {
 	s.Lock()
 	defer s.Unlock()
 	bytes, err := ioutil.ReadFile(s.file)
-	if err != nil {
+	if os.IsNotExist(err) {
+		s.data = botStorage{
+			Bots:                  make(map[string]flamingo.StoredBot),
+			Conversations:         make(map[string][]flamingo.StoredConversation),
+			ExistingConversations: make(map[string]bool),
+		}
+		return nil
+	} else if err != nil {
 		return err
 	}
 
@@ -61,20 +68,11 @@ func (s *fileStorage) save() error {
 		return err
 	}
 
-	f, err := os.Open(s.file)
-	if err != nil {
+	if err := os.Remove(s.file); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
-	if err := f.Truncate(0); err != nil {
-		return err
-	}
-
-	if _, err := f.Write(bytes); err != nil {
-		return err
-	}
-
-	return nil
+	return ioutil.WriteFile(s.file, bytes, 0777)
 }
 
 func (s *fileStorage) StoreBot(bot flamingo.StoredBot) error {
