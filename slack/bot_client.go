@@ -93,9 +93,6 @@ func (c *botClient) handleJob(job flamingo.Job) {
 }
 
 func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
-	c.Lock()
-	defer c.Unlock()
-
 	log15.Debug("received event of type", "type", e.Type)
 
 	switch evt := e.Data.(type) {
@@ -129,14 +126,17 @@ func (c *botClient) handleMessageEvent(evt *slack.MessageEvent) {
 		return
 	}
 
+	c.RLock()
 	conv, ok := c.conversations[evt.Channel]
+	c.RUnlock()
 	if !ok {
 		log15.Info("this", "that", fmt.Sprintf("%#v", evt.Channel), "those", evt.SubType)
-		if err := c.newConversation(evt.Channel); err != nil {
+		var err error
+		conv, err = c.newConversation(evt.Channel)
+		if err != nil {
 			log15.Error("unable to create conversation for bot", "channel", evt.Channel, "bot", c.id, "error", err.Error())
 			return
 		}
-		conv = c.conversations[evt.Channel]
 	}
 
 	log15.Debug("message for channel", "channel", evt.Channel, "text", evt.Text)
@@ -144,35 +144,37 @@ func (c *botClient) handleMessageEvent(evt *slack.MessageEvent) {
 }
 
 func (c *botClient) handleIMCreatedEvent(evt *slack.IMCreatedEvent) {
-	if err := c.newConversation(evt.Channel.ID); err != nil {
+	conv, err := c.newConversation(evt.Channel.ID)
+	if err != nil {
 		log15.Error("unable to create IM conversation for bot", "channel", evt.Channel.ID, "bot", c.id, "error", err.Error())
 		return
 	}
 
-	conv := c.conversations[evt.Channel.ID]
 	conv.handleIntro()
 }
 
 func (c *botClient) handleGroupJoinedEvent(evt *slack.GroupJoinedEvent) {
-	if err := c.newConversation(evt.Channel.ID); err != nil {
+	conv, err := c.newConversation(evt.Channel.ID)
+	if err != nil {
 		log15.Error("unable to create group conversation for bot", "channel", evt.Channel.ID, "bot", c.id, "error", err.Error())
 		return
 	}
 
-	conv := c.conversations[evt.Channel.ID]
 	conv.handleIntro()
 }
 
-func (c *botClient) newConversation(channel string) error {
+func (c *botClient) newConversation(channel string) (*botConversation, error) {
+	c.Lock()
+	defer c.Unlock()
 	log15.Debug("conversation does not exist for bot, creating", "channel", channel, "bot", c.id)
 	conv, err := newBotConversation(c.id, channel, c.rtm, c.delegate)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	c.conversations[channel] = conv
 	go conv.run()
-	return nil
+	return conv, nil
 }
 
 func (c *botClient) stop() {

@@ -136,7 +136,9 @@ func TestHandleRTMEventOpenConvo(t *testing.T) {
 	}
 
 	<-time.After(50 * time.Millisecond)
+	client.Lock()
 	assert.Equal(2, len(client.conversations))
+	client.Unlock()
 }
 
 func TestHandleIMCreatedEvent(t *testing.T) {
@@ -165,8 +167,12 @@ func TestHandleIMCreatedEvent(t *testing.T) {
 	}
 
 	<-time.After(50 * time.Millisecond)
+	client.Lock()
 	assert.Equal(1, len(client.conversations))
+	client.Unlock()
+	ctrl.Lock()
 	assert.Equal(1, ctrl.calledIntro)
+	ctrl.Unlock()
 }
 
 func TestHandleGroupJoinedEvent(t *testing.T) {
@@ -191,6 +197,10 @@ func TestHandleGroupJoinedEvent(t *testing.T) {
 	mock.events <- ev
 
 	<-time.After(50 * time.Millisecond)
+	client.Lock()
 	assert.Equal(1, len(client.conversations))
+	client.Unlock()
+	ctrl.Lock()
 	assert.Equal(1, ctrl.calledIntro)
+	ctrl.Unlock()
 }

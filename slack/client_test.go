@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"net/http"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
@@ -13,6 +14,7 @@ import (
 )
 
 type helloCtrl struct {
+	sync.RWMutex
 	msgs        []flamingo.Message
 	calledIntro int
 }
@@ -22,11 +24,15 @@ func (*helloCtrl) CanHandle(msg flamingo.Message) bool {
 }
 
 func (c *helloCtrl) Handle(bot flamingo.Bot, msg flamingo.Message) error {
+	c.Lock()
+	defer c.Unlock()
 	c.msgs = append(c.msgs, msg)
 	return nil
 }
 
 func (c *helloCtrl) HandleIntro(b flamingo.Bot, channel flamingo.Channel) error {
+	c.Lock()
+	defer c.Unlock()
 	c.calledIntro++
 	return nil
 }
@@ -85,16 +91,21 @@ func TestRunAndStopWebhook(t *testing.T) {
 }
 
 type clientBotMock struct {
+	sync.RWMutex
 	stopped  bool
 	actions  []slack.AttachmentActionCallback
 	channels []string
 }
 
 func (b *clientBotMock) stop() {
+	b.Lock()
+	defer b.Unlock()
 	b.stopped = true
 }
 
 func (b *clientBotMock) handleAction(channel string, action slack.AttachmentActionCallback) {
+	b.Lock()
+	defer b.Unlock()
 	b.channels = append(b.channels, channel)
 	b.actions = append(b.actions, action)
 }
@@ -116,10 +127,10 @@ func TestRunAndStop(t *testing.T) {
 	cli.bots["bot"] = bot
 	cli.bots["bot2"] = bot2
 
-	var stopped bool
+	var stopped = make(chan struct{}, 1)
 	go func() {
 		cli.Run()
-		stopped = true
+		stopped <- struct{}{}
 	}()
 
 	<-time.After(50 * time.Millisecond)
@@ -130,7 +141,11 @@ func TestRunAndStop(t *testing.T) {
 	assert.Nil(cli.Stop())
 	<-time.After(50 * time.Millisecond)
 
-	assert.True(stopped)
+	select {
+	case <-stopped:
+	case <-time.After(50 * time.Millisecond):
+		assert.FailNow("did not stop")
+	}
 	assert.True(bot.stopped)
 	assert.Equal(1, len(bot.actions))
 	assert.Equal("test_callback", bot.actions[0].CallbackID)

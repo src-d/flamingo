@@ -264,7 +264,7 @@ func (c *slackClient) Run() error {
 		select {
 		case action := <-actions:
 			log15.Debug("action received", "callback", action.CallbackID)
-			go c.handleActionCallback(action)
+			c.handleActionCallback(action)
 
 		case <-c.shutdown:
 			return nil
@@ -275,9 +275,6 @@ func (c *slackClient) Run() error {
 }
 
 func (c *slackClient) handleActionCallback(action slack.AttachmentActionCallback) {
-	c.Lock()
-	defer c.Unlock()
-
 	parts := strings.Split(action.CallbackID, "::")
 	if len(parts) < 3 {
 		log15.Error("invalid action", "callback", action.CallbackID)
@@ -285,7 +282,9 @@ func (c *slackClient) handleActionCallback(action slack.AttachmentActionCallback
 	}
 
 	bot, channel, id := parts[0], parts[1], parts[2]
+	c.RLock()
 	b, ok := c.bots[bot]
+	c.RUnlock()
 	if !ok {
 		log15.Warn("bot not found", "id", bot)
 		return
