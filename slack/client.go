@@ -13,7 +13,7 @@ import (
 	"github.com/mvader/slack"
 	"github.com/src-d/flamingo"
 	"github.com/src-d/flamingo/storage"
-	"github.com/tylerb/graceful"
+	"gopkg.in/tylerb/graceful.v1"
 )
 
 // ClientOptions are the configurable options of the slack client.
