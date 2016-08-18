@@ -3,8 +3,8 @@ package slack
 import (
 	"fmt"
 
-	"github.com/src-d/flamingo"
 	"github.com/mvader/slack"
+	"github.com/src-d/flamingo"
 )
 
 type btnStyle flamingo.ButtonType

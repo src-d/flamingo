@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mvader/slack"
 	"github.com/src-d/flamingo"
 	"github.com/src-d/flamingo/storage"
-	"github.com/mvader/slack"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -72,7 +72,7 @@ func TestActionHandler(t *testing.T) {
 func TestRunAndStopWebhook(t *testing.T) {
 	assert := assert.New(t)
 	cli := newClient("xAB3yVzGS4BQ3O9FACTa8Ho4", ClientOptions{
-		WebhookAddr: "127.0.0.1:8989",
+		Webhook: WebhookOptions{Addr: "127.0.0.1:8989"},
 	})
 	go cli.runWebhook()
 	<-time.After(50 * time.Millisecond)
@@ -129,9 +129,8 @@ func (b *clientBotMock) addConversation(id string) error {
 func TestRunAndStop(t *testing.T) {
 	assert := assert.New(t)
 	cli := newClient("xAB3yVzGS4BQ3O9FACTa8Ho4", ClientOptions{
-		WebhookAddr:   "127.0.0.1:8787",
-		EnableWebhook: true,
-		Debug:         true,
+		Webhook: WebhookOptions{Addr: "127.0.0.1:8787", Enabled: true},
+		Debug:   true,
 	})
 
 	bot := &clientBotMock{}

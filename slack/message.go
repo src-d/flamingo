@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/src-d/flamingo"
 	"github.com/mvader/slack"
+	"github.com/src-d/flamingo"
 )
 
 func newMessage(user flamingo.User, channel flamingo.Channel, src slack.Msg) flamingo.Message {
