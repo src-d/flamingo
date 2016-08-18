@@ -2,7 +2,6 @@ package slack
 
 import (
 	"io"
-	"net"
 	"net/http"
 	"os"
 	"strings"
@@ -11,20 +10,34 @@ import (
 
 	"gopkg.in/inconshreveable/log15.v2"
 
+	"github.com/mvader/slack"
 	"github.com/src-d/flamingo"
 	"github.com/src-d/flamingo/storage"
-	"github.com/mvader/slack"
+	"github.com/tylerb/graceful"
 )
 
 // ClientOptions are the configurable options of the slack client.
 type ClientOptions struct {
-	// EnableWebhook will start the webhook endpoint if true.
-	EnableWebhook bool
-	// WebhookAddr is the address on which the webhook will be run. Required
-	// if EnableWebhook is true.
-	WebhookAddr string
 	// Debug will print extra debug log messages.
 	Debug bool
+	// Webhook contains the options for the slack webhook.
+	Webhook WebhookOptions
+}
+
+// WebhookOptions are the configurable options of the slack webhook.
+type WebhookOptions struct {
+	// Enabled will start the webhook endpoint if true.
+	Enabled bool
+	// Addr is the address on which the webhook will be run. Required
+	// if EnableWebhook is true.
+	Addr string
+	// UseHTTPS will use HTTPS instead of HTTP to serve the webhook.
+	// Note that using HTTPS is required by slack for receiving webhooks.
+	UseHTTPS bool
+	// CertFile is the path to the SSL certificate. If UseHTTPS is true it is required.
+	CertFile string
+	// KeyFile is the path to the SSL key. If UseHTTPS is true it is required.
+	KeyFile string
 }
 
 type clientBot interface {
@@ -67,8 +80,8 @@ type scheduledJob struct {
 
 // NewClient creates a new Slack Client with the given token and options.
 func NewClient(token string, options ClientOptions) flamingo.Client {
-	if options.WebhookAddr == "" {
-		options.WebhookAddr = ":8080"
+	if options.Webhook.Addr == "" {
+		options.Webhook.Addr = ":8080"
 	}
 
 	cli := &slackClient{
@@ -87,10 +100,10 @@ func NewClient(token string, options ClientOptions) flamingo.Client {
 	return cli
 }
 
-func (s *slackClient) SetStorage(storage flamingo.Storage) {
-	s.Lock()
-	defer s.Unlock()
-	s.storage = storage
+func (c *slackClient) SetStorage(storage flamingo.Storage) {
+	c.Lock()
+	defer c.Unlock()
+	c.storage = storage
 }
 
 func (c *slackClient) SetLogOutput(w io.Writer) {
@@ -226,28 +239,26 @@ func (c *slackClient) Stop() error {
 	return nil
 }
 
-func (c *slackClient) runWebhook() {
-	srv := http.Server{
-		ReadTimeout:  1 * time.Second,
-		WriteTimeout: 3 * time.Second,
-		Addr:         c.options.WebhookAddr,
-		Handler:      c.webhook,
+func (c *slackClient) runWebhook() error {
+	srv := graceful.Server{
+		Server: &http.Server{
+			ReadTimeout:  1 * time.Second,
+			WriteTimeout: 3 * time.Second,
+			Addr:         c.options.Webhook.Addr,
+			Handler:      c.webhook,
+		},
+		Timeout: 30 * time.Second,
 	}
-
-	l, err := net.Listen("tcp", c.options.WebhookAddr)
-	if err != nil {
-		log15.Crit("error creating listener", "err", err)
-	}
-	defer l.Close()
 
 	go func() {
 		<-c.shutdownWebhook
-		l.Close()
+		<-srv.StopChan()
 	}()
 
-	if err := srv.Serve(l); err != nil {
-		log15.Crit("error running webhook", "err", err.Error())
+	if c.options.Webhook.UseHTTPS {
+		return srv.ListenAndServeTLS(c.options.Webhook.CertFile, c.options.Webhook.KeyFile)
 	}
+	return srv.ListenAndServe()
 }
 
 func (c *slackClient) runScheduledJobs() {
@@ -326,9 +337,17 @@ func (c *slackClient) Run() error {
 		}
 	}
 
-	if c.options.EnableWebhook {
-		log15.Info("Starting webhook server endpoint", "address", c.options.WebhookAddr)
-		go c.runWebhook()
+	if c.options.Webhook.Enabled {
+		log15.Info("Starting webhook server endpoint", "address", c.options.Webhook.Addr)
+		go func() {
+			if err := c.runWebhook(); err != nil {
+				log15.Crit("error running webhook, stopping", "err", err.Error())
+
+				if err := c.Stop(); err != nil {
+					log15.Crit("error stopping client", "err", err.Error())
+				}
+			}
+		}()
 	}
 
 	if len(c.scheduledJobs) > 0 {

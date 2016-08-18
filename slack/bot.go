@@ -6,8 +6,8 @@ import (
 
 	"gopkg.in/inconshreveable/log15.v2"
 
-	"github.com/src-d/flamingo"
 	"github.com/mvader/slack"
+	"github.com/src-d/flamingo"
 )
 
 type slackAPI interface {

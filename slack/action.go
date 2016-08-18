@@ -1,8 +1,8 @@
 package slack
 
 import (
-	"github.com/src-d/flamingo"
 	"github.com/mvader/slack"
+	"github.com/src-d/flamingo"
 )
 
 func convertAction(action slack.AttachmentActionCallback) flamingo.Action {
