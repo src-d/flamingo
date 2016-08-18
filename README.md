@@ -4,7 +4,7 @@
 
 Flamingo is a very thin and simple platform-agnostic chat bot framework.
 
-*Warning* API is still very experimental and it is expected to change in the near future.
+**Warning:** API is still very experimental and it is expected to change in the near future.
 
 You can see a simple example at [examples folder](https://github.com/src-d/flamingo/blob/master/examples/hello.go).
 
