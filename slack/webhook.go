@@ -3,7 +3,6 @@ package slack
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"net/http"
 
 	"gopkg.in/inconshreveable/log15.v2"
@@ -34,7 +33,6 @@ func (s *WebhookService) Consume() <-chan slack.AttachmentActionCallback {
 func (s *WebhookService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 	payload := r.PostFormValue("payload")
-	fmt.Println("PAYLOAD", payload)
 	var callback slack.AttachmentActionCallback
 	err := json.NewDecoder(bytes.NewBuffer([]byte(payload))).Decode(&callback)
 	if err != nil {
