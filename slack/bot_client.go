@@ -121,7 +121,7 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 }
 
 func (c *botClient) handleMessageEvent(evt *slack.MessageEvent) {
-	if evt.BotID == c.id {
+	if evt.BotID == c.id || evt.User == c.id {
 		log15.Debug("got message from self, ignoring")
 		return
 	}

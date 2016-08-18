@@ -77,6 +77,7 @@ func TestSay(t *testing.T) {
 	assert := assert.New(t)
 	mock := newapiMock(nil)
 	bot := &bot{
+		id:  "bar",
 		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
@@ -101,6 +102,7 @@ func TestImage(t *testing.T) {
 	assert := assert.New(t)
 	mock := newapiMock(nil)
 	bot := &bot{
+		id:  "bar",
 		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
@@ -118,6 +120,7 @@ func TestReply(t *testing.T) {
 	assert := assert.New(t)
 	mock := newapiMock(nil)
 	bot := &bot{
+		id:  "bar",
 		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
@@ -141,6 +144,7 @@ func TestAsk(t *testing.T) {
 	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 1)
 	bot := &bot{
+		id:  "bar",
 		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
@@ -165,6 +169,7 @@ func TestAskUntil(t *testing.T) {
 	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 2)
 	bot := &bot{
+		id:  "bar",
 		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
@@ -197,6 +202,7 @@ func TestConversation(t *testing.T) {
 	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 2)
 	bot := &bot{
+		id:  "bar",
 		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
@@ -233,6 +239,7 @@ func TestWaitForActionIgnorePolicy(t *testing.T) {
 	ch := make(chan *slack.MessageEvent, 1)
 	actions := make(chan slack.AttachmentActionCallback, 1)
 	bot := &bot{
+		id:  "bar",
 		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",
@@ -270,6 +277,7 @@ func TestWaitForActionReplyPolicy(t *testing.T) {
 	ch := make(chan *slack.MessageEvent, 1)
 	actions := make(chan slack.AttachmentActionCallback, 1)
 	bot := &bot{
+		id:  "bar",
 		api: mock,
 		channel: flamingo.Channel{
 			ID: "foo",

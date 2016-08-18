@@ -45,8 +45,14 @@ func (b *bot) Ask(msg flamingo.OutgoingMessage) (string, flamingo.Message, error
 }
 
 func (b *bot) waitForMessage() (flamingo.Message, error) {
-	msg := <-b.msgs
-	return b.convertMessage(msg)
+	for {
+		msg := <-b.msgs
+		if msg.BotID == b.ID() || msg.User == b.ID() {
+			log15.Debug("received message from self, ignoring")
+			continue
+		}
+		return b.convertMessage(msg)
+	}
 }
 
 func (b *bot) Conversation(convo flamingo.Conversation) ([]string, []flamingo.Message, error) {
