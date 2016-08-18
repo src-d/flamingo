@@ -3,7 +3,7 @@ package storage
 import (
 	"testing"
 
-	"github.com/mvader/flamingo"
+	"github.com/src-d/flamingo"
 	"github.com/stretchr/testify/assert"
 )
 

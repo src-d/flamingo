@@ -6,7 +6,7 @@ import (
 
 	"gopkg.in/inconshreveable/log15.v2"
 
-	"github.com/mvader/flamingo"
+	"github.com/src-d/flamingo"
 	"github.com/mvader/slack"
 )
 

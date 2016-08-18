@@ -5,8 +5,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/mvader/flamingo"
-	"github.com/mvader/flamingo/slack"
+	"github.com/src-d/flamingo"
+	"github.com/src-d/flamingo/slack"
 )
 
 type helloController struct{}

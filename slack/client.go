@@ -11,8 +11,8 @@ import (
 
 	"gopkg.in/inconshreveable/log15.v2"
 
-	"github.com/mvader/flamingo"
-	"github.com/mvader/flamingo/storage"
+	"github.com/src-d/flamingo"
+	"github.com/src-d/flamingo/storage"
 	"github.com/mvader/slack"
 )
 

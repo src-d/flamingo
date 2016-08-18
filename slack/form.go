@@ -3,7 +3,7 @@ package slack
 import (
 	"fmt"
 
-	"github.com/mvader/flamingo"
+	"github.com/src-d/flamingo"
 	"github.com/mvader/slack"
 )
 

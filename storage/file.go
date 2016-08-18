@@ -6,7 +6,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/mvader/flamingo"
+	"github.com/src-d/flamingo"
 )
 
 type botStorage struct {

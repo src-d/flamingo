@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/mvader/flamingo"
+	"github.com/src-d/flamingo"
 	"github.com/mvader/slack"
 	"github.com/stretchr/testify/assert"
 )

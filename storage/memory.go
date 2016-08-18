@@ -3,7 +3,7 @@ package storage
 import (
 	"sync"
 
-	"github.com/mvader/flamingo"
+	"github.com/src-d/flamingo"
 )
 
 type memoryStorage struct {
