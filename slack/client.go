@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -28,6 +29,8 @@ type ClientOptions struct {
 type WebhookOptions struct {
 	// Enabled will start the webhook endpoint if true.
 	Enabled bool
+	// VerificationToken is the token used to check incoming actions come from slack.
+	VerificationToken string
 	// Addr is the address on which the webhook will be run. Required
 	// if EnableWebhook is true.
 	Addr string
@@ -87,7 +90,7 @@ func NewClient(token string, options ClientOptions) flamingo.Client {
 	cli := &slackClient{
 		options:         options,
 		token:           token,
-		webhook:         NewWebhookService(token),
+		webhook:         NewWebhookService(options.Webhook.VerificationToken),
 		actionHandlers:  make(map[string]flamingo.ActionHandler),
 		bots:            make(map[string]clientBot),
 		shutdown:        make(chan struct{}, 1),
@@ -240,6 +243,10 @@ func (c *slackClient) Stop() error {
 }
 
 func (c *slackClient) runWebhook() error {
+	if c.options.Webhook.VerificationToken == "" {
+		return errors.New("webhook verification token is empty")
+	}
+
 	srv := graceful.Server{
 		Server: &http.Server{
 			ReadTimeout:  1 * time.Second,

@@ -3,6 +3,7 @@ package slack
 import (
 	"bytes"
 	"net/http"
+	"net/url"
 	"reflect"
 	"sync"
 	"testing"
@@ -77,7 +78,9 @@ func TestRunAndStopWebhook(t *testing.T) {
 	go cli.runWebhook()
 	<-time.After(50 * time.Millisecond)
 
-	resp, err := http.Post("http://127.0.0.1:8989", "application/json", bytes.NewBuffer([]byte(testCallback)))
+	data := url.Values{}
+	data.Set("payload", testCallback)
+	resp, err := http.Post("http://127.0.0.1:8989", "application/x-www-form-urlencoded", bytes.NewBufferString(data.Encode()))
 	assert.Nil(err)
 	assert.Equal(resp.StatusCode, http.StatusOK)
 
@@ -87,7 +90,7 @@ func TestRunAndStopWebhook(t *testing.T) {
 	client := http.Client{
 		Timeout: 50 * time.Millisecond,
 	}
-	resp, err = client.Post("http://127.0.0.1:8989", "application/json", bytes.NewBuffer([]byte(testCallback)))
+	resp, err = client.Post("http://127.0.0.1:8989", "application/x-www-form-urlencoded", bytes.NewBufferString(data.Encode()))
 	assert.NotNil(err)
 }
 
@@ -145,7 +148,9 @@ func TestRunAndStop(t *testing.T) {
 	}()
 
 	<-time.After(50 * time.Millisecond)
-	resp, err := http.Post("http://127.0.0.1:8787", "application/json", bytes.NewBuffer([]byte(testCallback)))
+	data := url.Values{}
+	data.Set("payload", testCallback)
+	resp, err := http.Post("http://127.0.0.1:8787", "application/x-www-form-urlencoded", bytes.NewBufferString(data.Encode()))
 	assert.Nil(err)
 	assert.Equal(resp.StatusCode, http.StatusOK)
 
@@ -240,5 +245,6 @@ func TestSave(t *testing.T) {
 
 func newClient(token string, options ClientOptions) *slackClient {
 	options.Debug = true
+	options.Webhook.VerificationToken = token
 	return NewClient(token, options).(*slackClient)
 }

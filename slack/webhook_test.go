@@ -4,13 +4,14 @@ import (
 	"bytes"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 )
 
-const testCallback = `{
+var testCallback = `{
   "actions": [
     {
       "name": "recommend",
@@ -41,22 +42,24 @@ const testCallback = `{
 func TestWebhook(t *testing.T) {
 	assert := assert.New(t)
 	cases := []struct {
-		body          []byte
+		body          string
 		status        int
 		shouldConsume bool
 		callback      string
 	}{
-		{nil, http.StatusBadRequest, false, ""},
-		{[]byte("skdjadljsal"), http.StatusBadRequest, false, ""},
-		{[]byte(`{"token": "fooo"}`), http.StatusUnauthorized, false, ""},
-		{[]byte(testCallback), http.StatusOK, true, "bot::channel::test_callback"},
+		{"", http.StatusBadRequest, false, ""},
+		{"skdjadljsal", http.StatusBadRequest, false, ""},
+		{`{"token": "fooo"}`, http.StatusUnauthorized, false, ""},
+		{testCallback, http.StatusOK, true, "bot::channel::test_callback"},
 	}
 
 	for _, c := range cases {
 		w := NewWebhookService("xAB3yVzGS4BQ3O9FACTa8Ho4")
 		srv := httptest.NewServer(w)
+		data := url.Values{}
+		data.Set("payload", c.body)
 
-		resp, err := http.Post(srv.URL, "application/json", bytes.NewBuffer(c.body))
+		resp, err := http.Post(srv.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(data.Encode()))
 		assert.Nil(err)
 		assert.Equal(resp.StatusCode, c.status)
 
