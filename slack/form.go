@@ -46,11 +46,7 @@ func formToMessage(bot, channel string, form flamingo.Form) slack.PostMessagePar
 }
 
 func combinedAttachment(bot, channel string, form flamingo.Form) slack.Attachment {
-	a := slack.Attachment{
-		Title: form.Title,
-		Text:  form.Text,
-		Color: form.Color,
-	}
+	a := headerAttachment(form)
 
 	for _, g := range form.Fields {
 		if g.Type() == flamingo.ButtonGroup && g.ID() != "" {
@@ -106,9 +102,10 @@ func textFieldToField(f flamingo.TextField) slack.AttachmentField {
 
 func headerAttachment(form flamingo.Form) slack.Attachment {
 	return slack.Attachment{
-		Title: form.Title,
-		Text:  form.Text,
-		Color: form.Color,
+		Title:      form.Title,
+		Text:       form.Text,
+		Color:      form.Color,
+		MarkdownIn: []string{"text", "pretext", "title", "values", "footer"},
 	}
 }
 

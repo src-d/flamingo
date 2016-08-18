@@ -1,6 +1,10 @@
 package flamingo
 
-import "time"
+import (
+	"regexp"
+	"strings"
+	"time"
+)
 
 // OutgoingMessage is a message that is going to be sent to the user.
 type OutgoingMessage struct {
@@ -42,6 +46,28 @@ type Message struct {
 	Text string
 	// Extra contains extra data given by the specific content.
 	Extra interface{}
+}
+
+// MatchString reports if the message text matches the given text lowercased
+// with leading and trailing spaces removed.
+func (m Message) MatchString(str string) bool {
+	return normalize(m.Text) == normalize(str)
+}
+
+// MatchStringCase reports if the message text matches the given text with case sensitivity
+// with leading and trailing spaces removed.
+func (m Message) MatchStringCase(str string) bool {
+	return strings.TrimSpace(m.Text) == strings.TrimSpace(str)
+}
+
+// MatchRegex reports if the message text matches the given regexp
+// with leading and trailing spaces removed.
+func (m Message) MatchRegex(regex *regexp.Regexp) bool {
+	return regex.MatchString(strings.TrimSpace(m.Text))
+}
+
+func normalize(str string) string {
+	return strings.ToLower(strings.TrimSpace(str))
 }
 
 // Conversation is a collection of OutgoingMessages.
