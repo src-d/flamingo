@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"os"
-	"strings"
 
 	"github.com/src-d/flamingo"
 	"github.com/src-d/flamingo/slack"
