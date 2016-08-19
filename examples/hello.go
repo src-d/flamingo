@@ -17,7 +17,7 @@ func (c *helloController) HandleIntro(bot flamingo.Bot, channel flamingo.Channel
 }
 
 func (c *helloController) CanHandle(msg flamingo.Message) bool {
-	return strings.ToLower(strings.TrimSpace(msg.Text)) == "hello"
+	return msg.MatchString("hello")
 }
 
 func (c *helloController) Handle(bot flamingo.Bot, msg flamingo.Message) error {
@@ -30,8 +30,7 @@ func (c *helloController) Handle(bot flamingo.Bot, msg flamingo.Message) error {
 		return err
 	}
 
-	text := strings.ToLower(strings.TrimSpace(resp.Text))
-	if text == "good" || text == "fine" {
+	if resp.MatchString("good") || resp.MatchString("fine") {
 		if _, err := bot.Say(flamingo.NewOutgoingMessage("i'm glad!")); err != nil {
 			return err
 		}
