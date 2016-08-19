@@ -81,6 +81,8 @@ type User struct {
 	Username string
 	// Name is the real name, if any.
 	Name string
+	// Email is the email of the user, if any.
+	Email string
 	// IsBot will be true if the user is a bot.
 	IsBot bool
 	// Type is the specific client this user comes from.

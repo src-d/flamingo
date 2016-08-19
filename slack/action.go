@@ -5,7 +5,7 @@ import (
 	"github.com/src-d/flamingo"
 )
 
-func convertAction(action slack.AttachmentActionCallback) flamingo.Action {
+func convertAction(action slack.AttachmentActionCallback, api slackAPI) (flamingo.Action, error) {
 	var userAction flamingo.UserAction
 	for _, a := range action.Actions {
 		userAction = flamingo.UserAction{
@@ -14,10 +14,12 @@ func convertAction(action slack.AttachmentActionCallback) flamingo.Action {
 		}
 	}
 
-	user := flamingo.User{
-		ID:       action.User.ID,
-		Username: action.User.Name,
+	info, err := api.GetUserInfo(action.User.ID)
+	if err != nil {
+		return flamingo.Action{}, err
 	}
+
+	user := convertUser(info)
 	channel := flamingo.Channel{
 		ID:   action.Channel.ID,
 		Name: action.Channel.Name,
@@ -28,5 +30,5 @@ func convertAction(action slack.AttachmentActionCallback) flamingo.Action {
 		Channel:         channel,
 		OriginalMessage: newMessage(user, channel, action.OriginalMessage.Msg),
 		Extra:           action,
-	}
+	}, nil
 }

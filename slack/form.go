@@ -47,25 +47,8 @@ func formToMessage(bot, channel string, form flamingo.Form) slack.PostMessagePar
 
 func combinedAttachment(bot, channel string, form flamingo.Form) slack.Attachment {
 	a := headerAttachment(form)
-
 	for _, g := range form.Fields {
-		if g.Type() == flamingo.ButtonGroup && g.ID() != "" {
-			a.CallbackID = fmt.Sprintf("%s::%s::%s", bot, channel, g.ID())
-		}
-
-		for _, i := range g.Items() {
-			switch f := i.(type) {
-			case flamingo.Button:
-				a.Actions = append(a.Actions, buttonToAction(f))
-			case flamingo.TextField:
-				a.Fields = append(a.Fields, textFieldToField(f))
-			case flamingo.Image:
-				a.ImageURL = f.URL
-				a.ThumbURL = f.ThumbnailURL
-				a.Title = f.Text
-				a.TitleLink = f.URL
-			}
-		}
+		addGroupToAttachment(&a, bot, channel, g)
 	}
 
 	return a
@@ -111,6 +94,11 @@ func headerAttachment(form flamingo.Form) slack.Attachment {
 
 func groupToAttachment(bot, channel string, group flamingo.FieldGroup) slack.Attachment {
 	a := slack.Attachment{}
+	addGroupToAttachment(&a, bot, channel, group)
+	return a
+}
+
+func addGroupToAttachment(a *slack.Attachment, bot, channel string, group flamingo.FieldGroup) {
 	if group.Type() == flamingo.ButtonGroup && group.ID() != "" {
 		a.CallbackID = fmt.Sprintf("%s::%s::%s", bot, channel, group.ID())
 	}
@@ -128,6 +116,4 @@ func groupToAttachment(bot, channel string, group flamingo.FieldGroup) slack.Att
 			a.TitleLink = f.URL
 		}
 	}
-
-	return a
 }

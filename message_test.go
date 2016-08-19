@@ -16,9 +16,9 @@ func TestMessageMatchString(t *testing.T) {
 
 func TestMessageMatchStringCase(t *testing.T) {
 	msg := Message{Text: " foo Bar Baz  "}
+	assert.False(t, msg.MatchStringCase("foo Bar baz"))
 	assert.True(t, msg.MatchStringCase("foo Bar Baz"))
 	assert.True(t, msg.MatchStringCase("  foo Bar Baz  "))
-	assert.False(t, msg.MatchStringCase("foo Bar baz"))
 }
 
 func TestMessageMatchRegex(t *testing.T) {

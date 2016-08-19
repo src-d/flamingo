@@ -59,3 +59,15 @@ func baseSlackParameters() slack.PostMessageParameters {
 		AsUser:    true,
 	}
 }
+
+func convertUser(user *slack.User) flamingo.User {
+	return flamingo.User{
+		ID:       user.ID,
+		Username: user.Name,
+		Name:     user.RealName,
+		IsBot:    user.IsBot,
+		Email:    user.Profile.Email,
+		Type:     flamingo.SlackClient,
+		Extra:    user,
+	}
+}

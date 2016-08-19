@@ -88,7 +88,13 @@ func (c *botConversation) run() {
 				continue
 			}
 
-			handler(c.createBot(), convertAction(action))
+			act, err := convertAction(action, c.rtm)
+			if err != nil {
+				log15.Error("error converting action", "err", err.Error())
+				continue
+			}
+
+			handler(c.createBot(), act)
 		case <-time.After(50 * time.Millisecond):
 		}
 	}
@@ -116,14 +122,7 @@ func (c *botConversation) convertMessage(src *slack.MessageEvent) (flamingo.Mess
 		return flamingo.Message{}, err
 	}
 
-	return newMessage(flamingo.User{
-		ID:       userID,
-		Username: user.Name,
-		Name:     user.RealName,
-		IsBot:    user.IsBot,
-		Type:     flamingo.SlackClient,
-		Extra:    user,
-	}, c.channel, src.Msg), nil
+	return newMessage(convertUser(user), c.channel, src.Msg), nil
 }
 
 func (c *botConversation) handleIntro() {

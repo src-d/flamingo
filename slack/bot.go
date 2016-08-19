@@ -95,7 +95,7 @@ func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (fla
 		select {
 		case action := <-b.actions:
 			if action.CallbackID == id {
-				return convertAction(action), nil
+				return convertAction(action, b.api)
 			} else if policy.Reply {
 				log15.Debug("received action with another id waiting for action", "id", action.CallbackID)
 				_, err := b.Say(flamingo.NewOutgoingMessage(policy.Message))
@@ -200,12 +200,5 @@ func (b *bot) findUser(id string) (flamingo.User, error) {
 		return flamingo.User{}, err
 	}
 
-	return flamingo.User{
-		ID:       id,
-		Username: user.Name,
-		Name:     user.RealName,
-		IsBot:    user.IsBot,
-		Type:     flamingo.SlackClient,
-		Extra:    user,
-	}, nil
+	return convertUser(user), nil
 }

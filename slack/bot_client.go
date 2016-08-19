@@ -110,10 +110,10 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 		log15.Error("Real Time Error", "error", evt.Error())
 
 	case *slack.IMCreatedEvent:
-		c.handleIMCreatedEvent(evt)
+		c.handleNewConversation(evt.Channel.ID)
 
 	case *slack.GroupJoinedEvent:
-		c.handleGroupJoinedEvent(evt)
+		c.handleNewConversation(evt.Channel.ID)
 
 	case *slack.InvalidAuthEvent:
 		log15.Crit("Invalid credentials for bot", "bot", c.id)
@@ -142,20 +142,10 @@ func (c *botClient) handleMessageEvent(evt *slack.MessageEvent) {
 	conv.messages <- evt
 }
 
-func (c *botClient) handleIMCreatedEvent(evt *slack.IMCreatedEvent) {
-	conv, err := c.newConversation(evt.Channel.ID)
+func (c *botClient) handleNewConversation(channelID string) {
+	conv, err := c.newConversation(channelID)
 	if err != nil {
-		log15.Error("unable to create IM conversation for bot", "channel", evt.Channel.ID, "bot", c.id, "error", err.Error())
-		return
-	}
-
-	conv.handleIntro()
-}
-
-func (c *botClient) handleGroupJoinedEvent(evt *slack.GroupJoinedEvent) {
-	conv, err := c.newConversation(evt.Channel.ID)
-	if err != nil {
-		log15.Error("unable to create group conversation for bot", "channel", evt.Channel.ID, "bot", c.id, "error", err.Error())
+		log15.Error("unable to create conversation for bot", "channel", channelID, "bot", c.id, "error", err.Error())
 		return
 	}
 
