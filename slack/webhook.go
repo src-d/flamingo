@@ -31,7 +31,6 @@ func (s *WebhookService) Consume() <-chan slack.AttachmentActionCallback {
 
 // ServeHTTP is the actual HTTP handler of the service.
 func (s *WebhookService) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
 	payload := r.PostFormValue("payload")
 	var callback slack.AttachmentActionCallback
 	err := json.NewDecoder(bytes.NewBuffer([]byte(payload))).Decode(&callback)
