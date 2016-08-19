@@ -320,7 +320,10 @@ func (c *slackClient) loadFromStorage() error {
 	}
 
 	for _, b := range bots {
-		c.AddBot(b.ID, b.Token)
+		if _, ok := c.bots[b.ID]; !ok {
+			c.AddBot(b.ID, b.Token)
+		}
+
 		convs, err := c.storage.LoadConversations(b)
 		if err != nil {
 			return err
