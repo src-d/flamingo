@@ -2,6 +2,7 @@ package slack
 
 import (
 	"strings"
+	"sync"
 	"time"
 
 	"gopkg.in/inconshreveable/log15.v2"
@@ -11,6 +12,8 @@ import (
 )
 
 type botConversation struct {
+	sync.RWMutex
+	working  bool
 	bot      string
 	channel  flamingo.Channel
 	rtm      slackRTM
@@ -65,6 +68,12 @@ func (c *botConversation) run() {
 			c.closed <- struct{}{}
 			return
 		case msg := <-c.messages:
+			if c.working {
+				c.messages <- msg
+				<-time.After(50 * time.Millisecond)
+				continue
+			}
+
 			message, err := c.convertMessage(msg)
 			if err != nil {
 				log15.Error("error converting message", "err", err.Error())
@@ -77,12 +86,18 @@ func (c *botConversation) run() {
 				continue
 			}
 
-			if err := ctrl.Handle(c.createBot(), message); err != nil {
-				log15.Error("error handling message", "error", err.Error())
-			}
+			go func() {
+				c.setWorking(true)
+				defer c.setWorking(false)
+				if err := ctrl.Handle(c.createBot(), message); err != nil {
+					log15.Error("error handling message", "error", err.Error())
+				}
+			}()
 
 		case action, ok := <-c.actions:
-			if !ok {
+			if c.working {
+				c.actions <- action
+				<-time.After(50 * time.Millisecond)
 				continue
 			}
 
@@ -98,10 +113,20 @@ func (c *botConversation) run() {
 				continue
 			}
 
-			go handler(c.createBot(), act)
+			go func() {
+				c.setWorking(true)
+				defer c.setWorking(false)
+				handler(c.createBot(), act)
+			}()
 		case <-time.After(50 * time.Millisecond):
 		}
 	}
+}
+
+func (c *botConversation) setWorking(working bool) {
+	c.Lock()
+	defer c.Unlock()
+	c.working = working
 }
 
 func (c *botConversation) createBot() flamingo.Bot {
