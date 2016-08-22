@@ -81,7 +81,11 @@ func (c *botConversation) run() {
 				log15.Error("error handling message", "error", err.Error())
 			}
 
-		case action := <-c.actions:
+		case action, ok := <-c.actions:
+			if !ok {
+				continue
+			}
+
 			handler, ok := c.delegate.ActionHandler(action.CallbackID)
 			if !ok {
 				log15.Warn("no handler for callback", "id", action.CallbackID)
@@ -94,7 +98,7 @@ func (c *botConversation) run() {
 				continue
 			}
 
-			handler(c.createBot(), act)
+			go handler(c.createBot(), act)
 		case <-time.After(50 * time.Millisecond):
 		}
 	}

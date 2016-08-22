@@ -97,7 +97,11 @@ func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (fla
 func (b *bot) WaitForActions(ids []string, policy flamingo.ActionWaitingPolicy) (flamingo.Action, error) {
 	for {
 		select {
-		case action := <-b.actions:
+		case action, ok := <-b.actions:
+			if !ok {
+				continue
+			}
+
 			if inSlice(ids, action.CallbackID) {
 				return convertAction(action, b.api)
 			} else if policy.Reply {
