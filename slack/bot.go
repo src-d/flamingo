@@ -91,10 +91,14 @@ func (b *bot) Say(msg flamingo.OutgoingMessage) (string, error) {
 }
 
 func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (flamingo.Action, error) {
+	return b.WaitForActions([]string{id}, policy)
+}
+
+func (b *bot) WaitForActions(ids []string, policy flamingo.ActionWaitingPolicy) (flamingo.Action, error) {
 	for {
 		select {
 		case action := <-b.actions:
-			if action.CallbackID == id {
+			if inSlice(ids, action.CallbackID) {
 				return convertAction(action, b.api)
 			} else if policy.Reply {
 				log15.Debug("received action with another id waiting for action", "id", action.CallbackID)
@@ -114,6 +118,15 @@ func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (fla
 		case <-time.After(100 * time.Millisecond):
 		}
 	}
+}
+
+func inSlice(slice []string, str string) bool {
+	for _, s := range slice {
+		if str == s {
+			return true
+		}
+	}
+	return false
 }
 
 func (b *bot) Form(form flamingo.Form) (string, error) {

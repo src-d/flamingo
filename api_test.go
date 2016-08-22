@@ -21,12 +21,13 @@ func TestButtonGroup(t *testing.T) {
 
 	g := NewButtonGroup(
 		"foo",
-		Button{Value: "a"},
-		Button{Value: "b"},
+		NewButton("a", "a"),
+		NewPrimaryButton("b", "b"),
+		NewDangerButton("c", "c"),
 	)
 
 	assert.Equal("foo", g.ID())
-	assert.Equal(2, len(g.Items()))
+	assert.Equal(3, len(g.Items()))
 	assert.Equal(ButtonGroup, g.Type())
 }
 
@@ -44,9 +45,9 @@ func TestTextFieldGroup(t *testing.T) {
 	assert := assert.New(t)
 
 	g := NewTextFieldGroup(
-		TextField{Value: "a"},
-		TextField{Value: "b"},
-		TextField{Value: "c"},
+		NewTextField("a", "a"),
+		NewTextField("b", "b"),
+		NewShortTextField("c", "c"),
 	)
 
 	assert.Equal("", g.ID())

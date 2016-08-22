@@ -51,6 +51,11 @@ type Bot interface {
 	// the given waiting policy.
 	WaitForAction(string, ActionWaitingPolicy) (Action, error)
 
+	// WaitForActions will block until an action with any of the given IDs comes.
+	// Until then, all the incoming messages or actions will be handled according
+	// to the given waiting policy.
+	WaitForActions([]string, ActionWaitingPolicy) (Action, error)
+
 	// AskUntil posts a question and checks the received message. If the
 	// AnswerChecker considers it is correct, it will return. If not, the message
 	// returned by the AnswerChecker will be posted and the process will repeat.

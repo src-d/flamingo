@@ -169,6 +169,23 @@ type TextField struct {
 	Short bool
 }
 
+// NewTextField creates a new textfield.
+func NewTextField(title, value string) TextField {
+	return TextField{
+		Title: title,
+		Value: value,
+	}
+}
+
+// NewShortTextField creates a new short text field.
+func NewShortTextField(title, value string) TextField {
+	return TextField{
+		Title: title,
+		Value: value,
+		Short: true,
+	}
+}
+
 func (f TextField) isField() {}
 
 // Image is an image to be posted.
