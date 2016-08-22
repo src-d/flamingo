@@ -117,6 +117,32 @@ type Button struct {
 	Confirmation *Confirmation
 }
 
+// NewButton creates a new default button. Value and name will be the same, if
+// that does not work for you, you will need to create a Button by hand.
+func NewButton(text, value string) Button {
+	return Button{
+		Text:  text,
+		Value: value,
+		Name:  value,
+	}
+}
+
+// NewPrimaryButton creates a new primary button. Value and name will be the same, if
+// that does not work for you, you will need to create a Button by hand.
+func NewPrimaryButton(text, value string) Button {
+	b := NewButton(text, value)
+	b.Type = PrimaryButton
+	return b
+}
+
+// NewDangerButton creates a new danger button. Value and name will be the same, if
+// that does not work for you, you will need to create a Button by hand.
+func NewDangerButton(text, value string) Button {
+	b := NewButton(text, value)
+	b.Type = DangerButton
+	return b
+}
+
 func (b Button) isField() {}
 
 // Confirmation is a confirmation popup to be shown after a button is clicked.
