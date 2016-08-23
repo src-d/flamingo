@@ -40,11 +40,11 @@ func (b *bot) Ask(msg flamingo.OutgoingMessage) (string, flamingo.Message, error
 		return "", flamingo.Message{}, err
 	}
 
-	message, err := b.waitForMessage()
+	message, err := b.WaitForMessage()
 	return ts, message, err
 }
 
-func (b *bot) waitForMessage() (flamingo.Message, error) {
+func (b *bot) WaitForMessage() (flamingo.Message, error) {
 	for {
 		msg := <-b.msgs
 		if msg.BotID == b.ID() || msg.User == b.ID() {
@@ -66,7 +66,7 @@ func (b *bot) Conversation(convo flamingo.Conversation) ([]string, []flamingo.Me
 
 		timestamps = append(timestamps, ts)
 
-		msg, err := b.waitForMessage()
+		msg, err := b.WaitForMessage()
 		if err != nil {
 			return nil, nil, err
 		}

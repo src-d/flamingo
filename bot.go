@@ -46,6 +46,9 @@ type Bot interface {
 	// given form. Returns the ID of the new form and an error, if any.
 	UpdateForm(id string, form Form) (string, error)
 
+	// WaitForMessage will block until a new message arrives.
+	WaitForMessage() (Message, error)
+
 	// WaitForAction will block until an action with the given ID comes. Until
 	// then, all the incoming messages or actions will be handled according to
 	// the given waiting policy.
