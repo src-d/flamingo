@@ -65,4 +65,9 @@ type Bot interface {
 	// It returns the ID of the last question posted, the last user message and
 	// an error, if any.
 	AskUntil(OutgoingMessage, AnswerChecker) (string, Message, error)
+
+	// InvokeAction dispatches a new action on the current conversation impersonating
+	// the given user. A call to InvokeAction does not block, it adds an action to the
+	// action queue and it will be processed asynchronously.
+	InvokeAction(id string, user User, action UserAction)
 }

@@ -22,7 +22,7 @@ type bot struct {
 	channel flamingo.Channel
 	api     slackAPI
 	msgs    <-chan *slack.MessageEvent
-	actions <-chan slack.AttachmentActionCallback
+	actions chan slack.AttachmentActionCallback
 }
 
 func (b *bot) ID() string {
@@ -194,6 +194,32 @@ func (b *bot) AskUntil(msg flamingo.OutgoingMessage, check flamingo.AnswerChecke
 	}
 
 	return id, m, err
+}
+
+func (b *bot) InvokeAction(id string, user flamingo.User, action flamingo.UserAction) {
+	var ch slack.Channel
+	ch.Name = b.channel.Name
+	ch.ID = b.channel.ID
+
+	b.actions <- slack.AttachmentActionCallback{
+		Actions: []slack.AttachmentAction{
+			slack.AttachmentAction{
+				Name:  action.Name,
+				Value: action.Value,
+			},
+		},
+		Channel:    ch,
+		CallbackID: id,
+		User: slack.User{
+			ID:       user.ID,
+			Name:     user.Username,
+			RealName: user.Name,
+			IsBot:    user.IsBot,
+			Profile: slack.UserProfile{
+				Email: user.Email,
+			},
+		},
+	}
 }
 
 func (b *bot) convertMessage(src *slack.MessageEvent) (flamingo.Message, error) {
