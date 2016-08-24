@@ -111,7 +111,10 @@ func (b *bot) WaitForActions(ids []string, policy flamingo.ActionWaitingPolicy) 
 					return flamingo.Action{}, err
 				}
 			}
-		case m := <-b.msgs:
+		case m, ok := <-b.msgs:
+			if !ok {
+				continue
+			}
 			if policy.Reply {
 				log15.Debug("received msg waiting for action, replying default msg", "text", m.Text)
 				_, err := b.Say(flamingo.NewOutgoingMessage(policy.Message))
