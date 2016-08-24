@@ -410,3 +410,37 @@ func TestUpdateMessage(t *testing.T) {
 	assert.Equal(mock.updates[0].text, "new text")
 	assert.Equal(len(mock.updates[0].params.Attachments), 0)
 }
+
+func TestInvokeAction(t *testing.T) {
+	bot := &bot{
+		channel: flamingo.Channel{
+			ID: "chan",
+		},
+		actions: make(chan slack.AttachmentActionCallback, 1),
+	}
+
+	bot.InvokeAction(
+		"action",
+		flamingo.User{
+			ID:       "foo",
+			Name:     "bar",
+			Username: "baz",
+			Email:    "qux",
+		},
+		flamingo.UserAction{
+			Name:  "fooo",
+			Value: "baar",
+		},
+	)
+
+	action := <-bot.actions
+	assert.Equal(t, "action", action.CallbackID)
+	assert.Equal(t, 1, len(action.Actions))
+	assert.Equal(t, "fooo", action.Actions[0].Name)
+	assert.Equal(t, "baar", action.Actions[0].Value)
+	assert.Equal(t, "foo", action.User.ID)
+	assert.Equal(t, "bar", action.User.RealName)
+	assert.Equal(t, "baz", action.User.Name)
+	assert.Equal(t, "qux", action.User.Profile.Email)
+	assert.Equal(t, "chan", action.Channel.ID)
+}
