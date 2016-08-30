@@ -11,23 +11,30 @@ func TestFormToMessage(t *testing.T) {
 	assert := assert.New(t)
 
 	params := formToMessage("aaaa", "bbbb", flamingo.Form{
-		Title:  "title",
-		Text:   "text",
-		Color:  "color",
-		Footer: "footer",
+		AuthorName:    "foo",
+		AuthorIconURL: "bar",
+		Title:         "title",
+		Text:          "text",
+		Color:         "color",
+		Footer:        "footer",
 		Fields: []flamingo.FieldGroup{
 			flamingo.NewButtonGroup("fooo", flamingo.Button{}),
 			flamingo.NewTextFieldGroup(flamingo.TextField{}),
 			flamingo.Image{URL: "foo"},
+			flamingo.Text("hello"),
 		},
 	})
 
-	assert.Equal(4, len(params.Attachments))
+	assert.Equal(5, len(params.Attachments))
+	assert.Equal("foo", params.Attachments[0].AuthorName)
+	assert.Equal("bar", params.Attachments[0].AuthorIcon)
 	assert.Equal("", params.Attachments[0].Footer)
 	assert.Equal("", params.Attachments[1].Footer)
 	assert.Equal("", params.Attachments[2].Footer)
-	assert.Equal("footer", params.Attachments[3].Footer)
+	assert.Equal("", params.Attachments[3].Footer)
+	assert.Equal("footer", params.Attachments[4].Footer)
 	assert.Equal("foo", params.Attachments[3].ImageURL)
+	assert.Equal("hello", params.Attachments[4].Text)
 
 	params = formToMessage("aaaa", "bbbb", flamingo.Form{
 		Title:   "title",

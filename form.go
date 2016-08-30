@@ -6,6 +6,10 @@ package flamingo
 type Form struct {
 	// Title is the title of the form.
 	Title string
+	// AuthorIconURL sets the icon of the form author to the given one.
+	AuthorIconURL string
+	// AuthorName sets the name of the form author to the given one.
+	AuthorName string
 	// Text is the text of the form.
 	Text string
 	// Combine will force all the form to be in a single message.
@@ -44,6 +48,8 @@ const (
 	TextFieldGroup
 	// ImageGroup is a single image.
 	ImageGroup
+	// TextGroup is a single text message.
+	TextGroup
 )
 
 type fieldGroup struct {
@@ -210,3 +216,19 @@ func (f Image) Items() []Field { return []Field{f} }
 
 // Type returns the ImageGroup type.
 func (f Image) Type() FieldGroupType { return ImageGroup }
+
+// Text is a single free text message to put on a form as a field.
+type Text string
+
+func (f Text) isField() {}
+
+// ID always returns an empty string, because Text don't have IDs. This
+// is only for buttons.
+func (f Text) ID() string { return "" }
+
+// Items returns a slice with only the text itself, which is a
+// field.
+func (f Text) Items() []Field { return []Field{f} }
+
+// Type returns always the TextGroup type.
+func (f Text) Type() FieldGroupType { return TextGroup }

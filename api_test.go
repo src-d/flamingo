@@ -41,6 +41,16 @@ func TestImage(t *testing.T) {
 	assert.Equal(ImageGroup, g.Type())
 }
 
+func TestText(t *testing.T) {
+	assert := assert.New(t)
+
+	g := Text("fooooo")
+
+	assert.Equal("", g.ID())
+	assert.Equal(1, len(g.Items()))
+	assert.Equal(TextGroup, g.Type())
+}
+
 func TestTextFieldGroup(t *testing.T) {
 	assert := assert.New(t)
 

@@ -30,7 +30,10 @@ func formToMessage(bot, channel string, form flamingo.Form) slack.PostMessagePar
 	if form.Combine {
 		params.Attachments = append(params.Attachments, combinedAttachment(bot, channel, form))
 	} else {
-		params.Attachments = append(params.Attachments, headerAttachment(form))
+		if form.Title != "" || form.Text != "" {
+			params.Attachments = append(params.Attachments, headerAttachment(form))
+		}
+
 		for _, g := range form.Fields {
 			att := groupToAttachment(bot, channel, g)
 			att.Color = form.Color
@@ -40,6 +43,14 @@ func formToMessage(bot, channel string, form flamingo.Form) slack.PostMessagePar
 
 	if len(params.Attachments) > 0 {
 		params.Attachments[len(params.Attachments)-1].Footer = form.Footer
+
+		if form.AuthorIconURL != "" {
+			params.Attachments[0].AuthorIcon = form.AuthorIconURL
+		}
+
+		if form.AuthorName != "" {
+			params.Attachments[0].AuthorName = form.AuthorName
+		}
 	}
 
 	return params
@@ -93,7 +104,7 @@ func headerAttachment(form flamingo.Form) slack.Attachment {
 }
 
 func groupToAttachment(bot, channel string, group flamingo.FieldGroup) slack.Attachment {
-	a := slack.Attachment{}
+	var a slack.Attachment
 	addGroupToAttachment(&a, bot, channel, group)
 	return a
 }
@@ -114,6 +125,8 @@ func addGroupToAttachment(a *slack.Attachment, bot, channel string, group flamin
 			a.ThumbURL = f.ThumbnailURL
 			a.Title = f.Text
 			a.TitleLink = f.URL
+		case flamingo.Text:
+			a.Text = string(f)
 		}
 	}
 }
