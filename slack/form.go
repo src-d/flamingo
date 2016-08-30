@@ -104,7 +104,9 @@ func headerAttachment(form flamingo.Form) slack.Attachment {
 }
 
 func groupToAttachment(bot, channel string, group flamingo.FieldGroup) slack.Attachment {
-	var a slack.Attachment
+	var a = slack.Attachment{
+		MarkdownIn: []string{"text", "pretext", "title", "values", "footer"},
+	}
 	addGroupToAttachment(&a, bot, channel, group)
 	return a
 }
