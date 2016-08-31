@@ -97,14 +97,15 @@ func (b *bot) Say(msg flamingo.OutgoingMessage) (string, error) {
 }
 
 func (b *bot) directChannelForUser(username string) (string, error) {
+	userID := username
 	user, err := b.api.GetUserByUsername(username)
-	if err != nil {
-		log15.Error("error getting user info", "user", username, "err", err.Error())
-		return "", err
+	if err == nil {
+		userID = user.ID
 	}
-	_, _, id, err := b.api.OpenIMChannel(user.ID)
+
+	_, _, id, err := b.api.OpenIMChannel(userID)
 	if err != nil {
-		log15.Error("error openning IM channel", "user", username, "err", err.Error())
+		log15.Error("error openning IM channel", "user", username, "userID", userID, "err", err.Error())
 		return "", err
 	}
 

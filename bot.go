@@ -31,14 +31,14 @@ type Bot interface {
 	// an error, if any.
 	Say(OutgoingMessage) (string, error)
 
-	// SayTo sends the given message to the user whose username is given. Returns the ID
+	// SayTo sends the given message to the user whose username or id is given. Returns the ID
 	// of the message and an error, if any.
 	SayTo(string, OutgoingMessage) (string, error)
 
 	// Form posts a form and returns the ID of the form and an error, if any.
 	Form(Form) (string, error)
 
-	// SendFormTo sends the given form to the user whose username is given. Returns the ID
+	// SendFormTo sends the given form to the user whose username or id is given. Returns the ID
 	// of the message and an error, if any.
 	SendFormTo(string, Form) (string, error)
 
