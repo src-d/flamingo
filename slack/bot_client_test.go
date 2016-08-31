@@ -16,8 +16,20 @@ type slackRTMMock struct {
 	apiMock
 }
 
+func newSlackRTMMock() *slackRTMMock {
+	return &slackRTMMock{
+		apiMock: apiMock{
+			users: make(map[string]*slack.User),
+		},
+	}
+}
+
 func (m *slackRTMMock) IncomingEvents() chan slack.RTMEvent {
 	return m.events
+}
+
+func (m *slackRTMMock) setUser(user *slack.User) {
+	m.apiMock.users[user.Name] = user
 }
 
 func TestHandleAction(t *testing.T) {
@@ -25,7 +37,7 @@ func TestHandleAction(t *testing.T) {
 
 	client := newBotClient(
 		"aaaa",
-		&slackRTMMock{},
+		newSlackRTMMock(),
 		NewClient("", ClientOptions{Debug: true}).(*slackClient),
 	)
 	defer client.stop()

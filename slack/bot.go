@@ -14,7 +14,9 @@ type slackAPI interface {
 	PostMessage(string, string, slack.PostMessageParameters) (string, string, error)
 	UpdateMessage(string, string, string, slack.UpdateMessageParameters) (string, string, string, error)
 	GetUserInfo(string) (*slack.User, error)
+	GetUserByUsername(string) (*slack.User, error)
 	GetChannelInfo(string) (*slack.Channel, error)
+	OpenIMChannel(string) (bool, bool, string, error)
 }
 
 type bot struct {
@@ -90,6 +92,35 @@ func (b *bot) Say(msg flamingo.OutgoingMessage) (string, error) {
 	return ts, err
 }
 
+func (b *bot) directChannelForUser(username string) (string, error) {
+	user, err := b.api.GetUserByUsername(username)
+	if err != nil {
+		log15.Error("error getting user info", "user", username, "err", err.Error())
+		return "", err
+	}
+	_, _, id, err := b.api.OpenIMChannel(user.ID)
+	if err != nil {
+		log15.Error("error openning IM channel", "user", username, "err", err.Error())
+		return "", err
+	}
+
+	return id, nil
+}
+
+func (b *bot) SayTo(username string, msg flamingo.OutgoingMessage) (string, error) {
+	id, err := b.directChannelForUser(username)
+	if err != nil {
+		return "", err
+	}
+
+	_, ts, err := b.api.PostMessage(id, msg.Text, createPostParams(msg))
+	if err != nil {
+		log15.Error("error posting message to user", "user", username, "error", err.Error(), "text", msg.Text)
+	}
+
+	return ts, err
+}
+
 func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (flamingo.Action, error) {
 	return b.WaitForActions([]string{id}, policy)
 }
@@ -139,6 +170,21 @@ func inSlice(slice []string, str string) bool {
 func (b *bot) Form(form flamingo.Form) (string, error) {
 	params := formToMessage(b.ID(), b.channel.ID, form)
 	_, ts, err := b.api.PostMessage(b.channel.ID, " ", params)
+	if err != nil {
+		log15.Error("error posting form", "err", err.Error())
+	}
+
+	return ts, err
+}
+
+func (b *bot) SendFormTo(username string, form flamingo.Form) (string, error) {
+	id, err := b.directChannelForUser(username)
+	if err != nil {
+		return "", err
+	}
+
+	params := formToMessage(b.ID(), id, form)
+	_, ts, err := b.api.PostMessage(id, " ", params)
 	if err != nil {
 		log15.Error("error posting form", "err", err.Error())
 	}

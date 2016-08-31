@@ -25,9 +25,23 @@ type updateMessageArgs struct {
 }
 
 type apiMock struct {
+	users    map[string]*slack.User
 	msgs     []postMessageArgs
 	updates  []updateMessageArgs
 	callback func(postMessageArgs) bool
+}
+
+func (m *apiMock) setUser(user *slack.User) {
+	m.users[user.Name] = user
+}
+
+func (m *apiMock) GetUserByUsername(username string) (*slack.User, error) {
+	u, ok := m.users[username]
+	if !ok {
+		return nil, errors.New("not_found")
+	}
+
+	return u, nil
 }
 
 func (m *apiMock) PostMessage(channel, text string, params slack.PostMessageParameters) (string, string, error) {
@@ -63,9 +77,14 @@ func (m *apiMock) GetChannelInfo(id string) (*slack.Channel, error) {
 	return ch, nil
 }
 
+func (m *apiMock) OpenIMChannel(ch string) (bool, bool, string, error) {
+	return true, true, ch, nil
+}
+
 func newapiMock(callback func(postMessageArgs) bool) *apiMock {
 	return &apiMock{
 		callback: callback,
+		users:    make(map[string]*slack.User),
 	}
 }
 
@@ -96,6 +115,28 @@ func TestSay(t *testing.T) {
 
 	assert.Equal(mock.msgs[1].channel, "bar")
 	assert.Equal(mock.msgs[1].text, "hi there you too")
+}
+
+func TestSayTo(t *testing.T) {
+	assert := assert.New(t)
+	mock := newapiMock(nil)
+	mock.setUser(&slack.User{
+		ID:   "destination",
+		Name: "fooo",
+	})
+	bot := &bot{
+		id:  "bar",
+		api: mock,
+		channel: flamingo.Channel{
+			ID: "foo",
+		},
+	}
+
+	assert.Nil(ignoreID(bot.SayTo("fooo", flamingo.NewOutgoingMessage("hi there"))))
+
+	assert.Equal(len(mock.msgs), 1)
+	assert.Equal(mock.msgs[0].channel, "destination")
+	assert.Equal(mock.msgs[0].text, "hi there")
 }
 
 func TestImage(t *testing.T) {
@@ -348,6 +389,46 @@ func TestForm(t *testing.T) {
 
 	assert.Equal(len(mock.msgs), 1)
 	assert.Equal(mock.msgs[0].channel, "foo")
+	assert.Equal(mock.msgs[0].text, " ")
+	assert.Equal(len(mock.msgs[0].params.Attachments), 1)
+}
+
+func TestSendFormTo(t *testing.T) {
+	assert := assert.New(t)
+	mock := newapiMock(nil)
+	mock.setUser(&slack.User{
+		ID:   "destination",
+		Name: "fooo",
+	})
+	bot := &bot{
+		id:  "bar",
+		api: mock,
+		channel: flamingo.Channel{
+			ID: "foo",
+		},
+	}
+
+	assert.Nil(ignoreID(bot.SendFormTo("fooo", flamingo.Form{
+		Title:   "title",
+		Text:    "text",
+		Color:   "color",
+		Combine: true,
+		Fields: []flamingo.FieldGroup{
+			flamingo.NewButtonGroup("baz", flamingo.Button{
+				Name:  "yes",
+				Value: "yes",
+				Text:  "Yes",
+				Type:  flamingo.PrimaryButton,
+			}),
+			flamingo.NewTextFieldGroup(flamingo.TextField{
+				Title: "title",
+				Value: "value",
+			}),
+		},
+	})))
+
+	assert.Equal(len(mock.msgs), 1)
+	assert.Equal(mock.msgs[0].channel, "destination")
 	assert.Equal(mock.msgs[0].text, " ")
 	assert.Equal(len(mock.msgs[0].params.Attachments), 1)
 }

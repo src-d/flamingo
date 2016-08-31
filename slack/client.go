@@ -58,6 +58,21 @@ func (s *slackRTMWrapper) IncomingEvents() chan slack.RTMEvent {
 	return s.RTM.IncomingEvents
 }
 
+func (s *slackRTMWrapper) GetUserByUsername(username string) (*slack.User, error) {
+	users, err := s.RTM.GetUsers()
+	if err != nil {
+		return nil, err
+	}
+
+	for _, u := range users {
+		if u.Name == username {
+			return &u, nil
+		}
+	}
+
+	return nil, errors.New("not_found")
+}
+
 type slackClient struct {
 	sync.RWMutex
 	webhook         *WebhookService
