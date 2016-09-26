@@ -243,6 +243,20 @@ func TestSave(t *testing.T) {
 	assert.True(t, ok)
 }
 
+func TestAddBotOnlyOnce(t *testing.T) {
+	assert := assert.New(t)
+	cli := newClient("", ClientOptions{})
+	storage := storage.NewMemory()
+	cli.SetStorage(storage)
+	cli.AddBot("1", "foo")
+	cli.AddBot("2", "foo")
+	cli.AddBot("1", "foo")
+
+	bots, _ := storage.LoadBots()
+	assert.Equal(2, len(bots))
+	assert.Equal(2, len(cli.loadedBots))
+}
+
 func newClient(token string, options ClientOptions) *slackClient {
 	options.Debug = true
 	options.Webhook.VerificationToken = token
