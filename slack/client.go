@@ -87,6 +87,7 @@ type slackClient struct {
 	scheduledJobs   []*scheduledJob
 	scheduledWg     *sync.WaitGroup
 	storage         flamingo.Storage
+	loadedBots      []clientBot
 }
 
 type scheduledJob struct {
@@ -203,11 +204,16 @@ func (c *slackClient) AddBot(id, token string) {
 		}
 	}
 
+	if _, ok := c.bots[id]; ok {
+		return
+	}
+
 	client := slack.New(token)
 	client.SetDebug(false)
 	rtm := client.NewRTM()
 	go rtm.ManageConnection()
 	c.bots[id] = newBotClient(id, &slackRTMWrapper{rtm}, c)
+	c.loadedBots = append(c.loadedBots, c.bots[id])
 }
 
 func (c *slackClient) HandleIntro(bot flamingo.Bot, channel flamingo.Channel) {
