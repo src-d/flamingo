@@ -270,7 +270,8 @@ func (b *bot) InvokeAction(id string, user flamingo.User, action flamingo.UserAc
 			RealName: user.Name,
 			IsBot:    user.IsBot,
 			Profile: slack.UserProfile{
-				Email: user.Email,
+				Email:         user.Email,
+				ImageOriginal: user.IconURL,
 			},
 		},
 	}

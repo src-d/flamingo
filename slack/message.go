@@ -68,6 +68,7 @@ func convertUser(user *slack.User) flamingo.User {
 		IsBot:    user.IsBot,
 		Email:    user.Profile.Email,
 		Type:     flamingo.SlackClient,
+		IconURL:  user.Profile.ImageOriginal,
 		Extra:    user,
 	}
 }
