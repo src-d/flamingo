@@ -85,6 +85,8 @@ type User struct {
 	Email string
 	// IsBot will be true if the user is a bot.
 	IsBot bool
+	// IconURL is the URL of the icon representing that user.
+	IconURL string
 	// Type is the specific client this user comes from.
 	Type ClientType
 	// Extra contains extra data given by the specific content.
