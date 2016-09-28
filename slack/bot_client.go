@@ -66,13 +66,16 @@ func (c *botClient) runRTM() {
 }
 
 func (c *botClient) handleAction(channel string, action slack.AttachmentActionCallback) {
-	c.Lock()
-	defer c.Unlock()
-
+	c.RLock()
 	conv, ok := c.conversations[channel]
+	c.RUnlock()
 	if !ok {
-		log15.Warn("conversation not found in bot", "channel", channel, "id", c.id)
-		return
+		var err error
+		conv, err = c.newConversation(channel)
+		if err != nil {
+			log15.Error("unable to create conversation for bot", "channel", channel, "bot", c.id, "error", err.Error())
+			return
+		}
 	}
 
 	conv.actions <- action
