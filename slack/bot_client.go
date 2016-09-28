@@ -118,6 +118,9 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 	case *slack.GroupJoinedEvent:
 		c.handleNewConversation(evt.Channel.ID)
 
+	case *slack.ChannelJoinedEvent:
+		c.handleNewConversation(evt.Channel.ID)
+
 	case *slack.InvalidAuthEvent:
 		log15.Crit("Invalid credentials for bot", "bot", c.id)
 	}
