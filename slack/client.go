@@ -88,6 +88,7 @@ type slackClient struct {
 	scheduledWg     *sync.WaitGroup
 	storage         flamingo.Storage
 	loadedBots      []clientBot
+	errorHandler    flamingo.ErrorHandler
 }
 
 type scheduledJob struct {
@@ -123,6 +124,18 @@ func (c *slackClient) SetStorage(storage flamingo.Storage) {
 	c.Lock()
 	defer c.Unlock()
 	c.storage = storage
+}
+
+func (c *slackClient) SetErrorHandler(handler flamingo.ErrorHandler) {
+	c.Lock()
+	defer c.Unlock()
+	c.errorHandler = handler
+}
+
+func (c *slackClient) ErrorHandler() flamingo.ErrorHandler {
+	c.Lock()
+	defer c.Unlock()
+	return c.errorHandler
 }
 
 func (c *slackClient) SetLogOutput(w io.Writer) {
@@ -312,6 +325,18 @@ func (c *slackClient) runScheduledJob(j scheduledJob) {
 			for _, b := range c.bots {
 				wg.Add(1)
 				go func(b clientBot) {
+					defer func() {
+						if r := recover(); r != nil {
+							if err, ok := r.(error); ok {
+								log15.Error("panic caught running scheduled job", "err", err.Error())
+							}
+
+							if handler := c.ErrorHandler(); handler != nil {
+								handler(r)
+							}
+						}
+					}()
+
 					b.handleJob(j.job)
 					wg.Done()
 				}(b)

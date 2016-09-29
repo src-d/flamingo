@@ -20,6 +20,7 @@ type handlerDelegate interface {
 	ActionHandler(string) (flamingo.ActionHandler, bool)
 	HandleIntro(flamingo.Bot, flamingo.Channel)
 	Storage() flamingo.Storage
+	ErrorHandler() flamingo.ErrorHandler
 }
 
 type botClient struct {
@@ -47,6 +48,28 @@ func newBotClient(id string, rtm slackRTM, delegate handlerDelegate) *botClient 
 }
 
 func (c *botClient) runRTM() {
+	defer func() {
+		if r := recover(); r != nil {
+			if err, ok := r.(error); ok {
+				log15.Error("panic caught on bot client", "err", err.Error())
+			}
+
+			if handler := c.delegate.ErrorHandler(); handler != nil {
+				handler(r)
+			}
+
+			log15.Info("shutting down bot client")
+			for id, convo := range c.conversations {
+				log15.Debug("shutting down conversation", "channel", id)
+				convo.stop()
+				log15.Debug("shut down conversation", "channel", id)
+			}
+
+			log15.Info("restarting bot client")
+			go c.runRTM()
+		}
+	}()
+
 	log15.Info("starting real time", "bot", c.id)
 	for {
 		select {

@@ -26,8 +26,8 @@ func TestFormToMessage(t *testing.T) {
 	})
 
 	assert.Equal(5, len(params.Attachments))
-	assert.Equal("foo", params.Attachments[0].AuthorName)
-	assert.Equal("bar", params.Attachments[0].AuthorIcon)
+	assert.Equal("foo", params.Username)
+	assert.Equal("bar", params.IconURL)
 	assert.Equal("", params.Attachments[0].Footer)
 	assert.Equal("", params.Attachments[1].Footer)
 	assert.Equal("", params.Attachments[2].Footer)

@@ -25,6 +25,11 @@ type Client interface {
 	// SetIntroHandler sets the IntroHandler for the client.
 	SetIntroHandler(IntroHandler)
 
+	// SetErrorHandler sets the error handler of the client. The error handler
+	// will receive the result of recover() after a panic has been caught.
+	// All running instances of bots are restarted after a panic.
+	SetErrorHandler(ErrorHandler)
+
 	// SetStorage sets the storage to be used to store conversations and bots.
 	// In this package clients, if the Storage is added *before* calling the
 	// Run method bots and conversations will be loaded from there.
@@ -40,6 +45,10 @@ type Client interface {
 	// Stop stops the client.
 	Stop() error
 }
+
+// ErrorHandler will handle an error after a panic. The parameter it receives is the
+// result of recover()
+type ErrorHandler func(interface{})
 
 // ClientType tells us what type of client is.
 type ClientType uint
