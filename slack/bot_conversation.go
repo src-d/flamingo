@@ -53,8 +53,8 @@ func newBotConversation(bot, channelID string, rtm slackRTM, delegate handlerDel
 		rtm:      rtm,
 		bot:      bot,
 		channel:  channel,
-		actions:  make(chan slack.AttachmentActionCallback),
-		messages: make(chan *slack.MessageEvent),
+		actions:  make(chan slack.AttachmentActionCallback, 1),
+		messages: make(chan *slack.MessageEvent, 1),
 		shutdown: make(chan struct{}, 1),
 		closed:   make(chan struct{}, 1),
 		delegate: delegate,
@@ -68,7 +68,10 @@ func (c *botConversation) run() {
 			c.closed <- struct{}{}
 			return
 		case msg := <-c.messages:
-			if c.working {
+			c.Lock()
+			working := c.working
+			c.Unlock()
+			if working {
 				c.messages <- msg
 				<-time.After(50 * time.Millisecond)
 				continue

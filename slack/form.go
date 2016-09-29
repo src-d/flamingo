@@ -24,7 +24,9 @@ func formToMessage(bot, channel string, form flamingo.Form) slack.PostMessagePar
 	params := slack.PostMessageParameters{
 		LinkNames: 1,
 		Markdown:  true,
-		AsUser:    true,
+		AsUser:    form.AuthorIconURL == "" && form.AuthorName == "",
+		IconURL:   form.AuthorIconURL,
+		Username:  form.AuthorName,
 	}
 
 	if form.Combine {
@@ -43,14 +45,6 @@ func formToMessage(bot, channel string, form flamingo.Form) slack.PostMessagePar
 
 	if len(params.Attachments) > 0 {
 		params.Attachments[len(params.Attachments)-1].Footer = form.Footer
-
-		if form.AuthorIconURL != "" {
-			params.Attachments[0].AuthorIcon = form.AuthorIconURL
-		}
-
-		if form.AuthorName != "" {
-			params.Attachments[0].AuthorName = form.AuthorName
-		}
 	}
 
 	return params
