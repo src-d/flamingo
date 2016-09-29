@@ -11,6 +11,7 @@ import (
 
 func newMessage(user flamingo.User, channel flamingo.Channel, src slack.Msg) flamingo.Message {
 	return flamingo.Message{
+		ID:      src.Timestamp,
 		User:    user,
 		Type:    flamingo.SlackClient,
 		Channel: channel,
