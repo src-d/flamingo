@@ -62,6 +62,21 @@ func newBotConversation(bot, channelID string, rtm slackRTM, delegate handlerDel
 }
 
 func (c *botConversation) run() {
+	defer func() {
+		if r := recover(); r != nil {
+			if err, ok := r.(error); ok {
+				log15.Error("panic caught on bot conversation", "err", err.Error())
+			}
+
+			if handler := c.delegate.ErrorHandler(); handler != nil {
+				handler(r)
+			}
+
+			log15.Info("restarting bot conversation")
+			go c.run()
+		}
+	}()
+
 	for {
 		select {
 		case <-c.shutdown:
@@ -90,6 +105,18 @@ func (c *botConversation) run() {
 			}
 
 			go func() {
+				defer func() {
+					if r := recover(); r != nil {
+						if err, ok := r.(error); ok {
+							log15.Error("panic caught handling msg", "err", err.Error())
+						}
+
+						if handler := c.delegate.ErrorHandler(); handler != nil {
+							handler(r)
+						}
+					}
+				}()
+
 				c.setWorking(true)
 				defer c.setWorking(false)
 				if err := ctrl.Handle(c.createBot(), message); err != nil {
@@ -117,6 +144,18 @@ func (c *botConversation) run() {
 			}
 
 			go func() {
+				defer func() {
+					if r := recover(); r != nil {
+						if err, ok := r.(error); ok {
+							log15.Error("panic caught handling action", "err", err.Error())
+						}
+
+						if handler := c.delegate.ErrorHandler(); handler != nil {
+							handler(r)
+						}
+					}
+				}()
+
 				c.setWorking(true)
 				defer c.setWorking(false)
 				handler(c.createBot(), act)
