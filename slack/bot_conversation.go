@@ -98,7 +98,7 @@ func (c *botConversation) run() {
 				continue
 			}
 
-			ctrl, ok := c.delegate.ControllerFor(message)
+			handler, ok := c.delegate.ControllerFor(message)
 			if !ok {
 				log15.Warn("no controller for message", "text", message.Text)
 				continue
@@ -119,7 +119,7 @@ func (c *botConversation) run() {
 
 				c.setWorking(true)
 				defer c.setWorking(false)
-				if err := ctrl.Handle(c.createBot(), message); err != nil {
+				if err := handler(c.createBot(), message); err != nil {
 					log15.Error("error handling message", "error", err.Error())
 				}
 			}()

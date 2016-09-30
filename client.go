@@ -13,6 +13,11 @@ type Client interface {
 	// SetLogOutput will write the logs to the given io.Writer.
 	SetLogOutput(io.Writer)
 
+	// Use adds one or more middlewares. All middlewares will be executed in the
+	// order they were added. Middlewares are only executed for controllers and
+	// are executed for all of them.
+	Use(...Middleware)
+
 	// AddController adds a new Controller to the Client.
 	AddController(Controller)
 
@@ -49,6 +54,12 @@ type Client interface {
 // ErrorHandler will handle an error after a panic. The parameter it receives is the
 // result of recover()
 type ErrorHandler func(interface{})
+
+// HandlerFunc is a function that receives a bot and a message and does something with them.
+type HandlerFunc func(Bot, Message) error
+
+// Middleware is a function that receives a bot and a message and the next handler to be called after it.
+type Middleware func(Bot, Message, HandlerFunc) error
 
 // ClientType tells us what type of client is.
 type ClientType uint

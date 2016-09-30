@@ -89,6 +89,7 @@ type slackClient struct {
 	storage         flamingo.Storage
 	loadedBots      []clientBot
 	errorHandler    flamingo.ErrorHandler
+	middlewares     []flamingo.Middleware
 }
 
 type scheduledJob struct {
@@ -168,17 +169,43 @@ func (c *slackClient) AddActionHandler(id string, handler flamingo.ActionHandler
 	c.actionHandlers[id] = handler
 }
 
-func (c *slackClient) ControllerFor(msg flamingo.Message) (flamingo.Controller, bool) {
+func (c *slackClient) ControllerFor(msg flamingo.Message) (flamingo.HandlerFunc, bool) {
 	c.Lock()
 	defer c.Unlock()
 
 	for _, ctrl := range c.controllers {
 		if ctrl.CanHandle(msg) {
-			return ctrl, true
+			return c.wrap(ctrl.Handle), true
 		}
 	}
 
 	return nil, false
+}
+
+func (c *slackClient) wrap(handler flamingo.HandlerFunc) flamingo.HandlerFunc {
+	if len(c.middlewares) == 0 {
+		return handler
+	}
+
+	var (
+		middlewares = c.middlewares[:]
+		idx         int
+		length      = len(middlewares)
+		next        flamingo.HandlerFunc
+	)
+
+	next = func(bot flamingo.Bot, msg flamingo.Message) error {
+		idx++
+		if idx >= length {
+			return handler(bot, msg)
+		}
+
+		return middlewares[idx](bot, msg, next)
+	}
+
+	return func(bot flamingo.Bot, msg flamingo.Message) error {
+		return middlewares[0](bot, msg, next)
+	}
 }
 
 func (c *slackClient) ActionHandler(id string) (flamingo.ActionHandler, bool) {
@@ -193,6 +220,16 @@ func (c *slackClient) SetIntroHandler(handler flamingo.IntroHandler) {
 	c.Lock()
 	defer c.Unlock()
 	c.introHandler = handler
+}
+
+func (c *slackClient) Use(middlewares ...flamingo.Middleware) {
+	c.Lock()
+	defer c.Unlock()
+	for _, m := range middlewares {
+		if m != nil {
+			c.middlewares = append(c.middlewares, m)
+		}
+	}
 }
 
 func (c *slackClient) AddBot(id, token string) {
