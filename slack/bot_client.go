@@ -16,7 +16,7 @@ type slackRTM interface {
 }
 
 type handlerDelegate interface {
-	ControllerFor(flamingo.Message) (flamingo.Controller, bool)
+	ControllerFor(flamingo.Message) (flamingo.HandlerFunc, bool)
 	ActionHandler(string) (flamingo.ActionHandler, bool)
 	HandleIntro(flamingo.Bot, flamingo.Channel)
 	Storage() flamingo.Storage

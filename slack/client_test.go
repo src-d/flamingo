@@ -13,6 +13,7 @@ import (
 	"github.com/src-d/flamingo"
 	"github.com/src-d/flamingo/storage"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type helloCtrl struct {
@@ -47,7 +48,7 @@ func TestControllerFor(t *testing.T) {
 
 	result, ok := cli.ControllerFor(flamingo.Message{Text: "hello"})
 	assert.True(ok)
-	assert.Equal(ctrl, result)
+	assert.Equal(reflect.ValueOf(ctrl.Handle).Pointer(), reflect.ValueOf(result).Pointer())
 
 	result, ok = cli.ControllerFor(flamingo.Message{Text: "goodbye"})
 	assert.False(ok)
@@ -255,6 +256,30 @@ func TestAddBotOnlyOnce(t *testing.T) {
 	bots, _ := storage.LoadBots()
 	assert.Equal(2, len(bots))
 	assert.Equal(2, len(cli.loadedBots))
+}
+
+func TestWrap(t *testing.T) {
+	require := require.New(t)
+	cli := newClient("", ClientOptions{})
+
+	var result []string
+	cli.Use(func(bot flamingo.Bot, msg flamingo.Message, next flamingo.HandlerFunc) error {
+		result = append(result, "1")
+		return next(bot, msg)
+	})
+
+	cli.Use(func(bot flamingo.Bot, msg flamingo.Message, next flamingo.HandlerFunc) error {
+		result = append(result, "2")
+		return next(bot, msg)
+	})
+
+	handler := cli.wrap(func(_ flamingo.Bot, msg flamingo.Message) error {
+		result = append(result, msg.Text)
+		return nil
+	})
+
+	require.Nil(handler(nil, flamingo.Message{Text: "3"}))
+	require.Equal([]string{"1", "2", "3"}, result)
 }
 
 func newClient(token string, options ClientOptions) *slackClient {
