@@ -87,7 +87,9 @@ func (c *botConversation) run() {
 			working := c.working
 			c.Unlock()
 			if working {
-				c.messages <- msg
+				go func() {
+					c.messages <- msg
+				}()
 				<-time.After(50 * time.Millisecond)
 				continue
 			}
