@@ -14,7 +14,6 @@ import (
 	"github.com/mvader/slack"
 	"github.com/src-d/flamingo"
 	"github.com/src-d/flamingo/storage"
-	"gopkg.in/tylerb/graceful.v1"
 )
 
 // ClientOptions are the configurable options of the slack client.
@@ -319,20 +318,12 @@ func (c *slackClient) runWebhook() error {
 		return errors.New("webhook verification token is empty")
 	}
 
-	srv := graceful.Server{
-		Server: &http.Server{
-			ReadTimeout:  1 * time.Second,
-			WriteTimeout: 3 * time.Second,
-			Addr:         c.options.Webhook.Addr,
-			Handler:      c.webhook,
-		},
-		Timeout: 30 * time.Second,
+	srv := http.Server{
+		ReadTimeout:  1 * time.Second,
+		WriteTimeout: 3 * time.Second,
+		Addr:         c.options.Webhook.Addr,
+		Handler:      c.webhook,
 	}
-
-	go func() {
-		<-c.shutdownWebhook
-		<-srv.StopChan()
-	}()
 
 	if c.options.Webhook.UseHTTPS {
 		return srv.ListenAndServeTLS(c.options.Webhook.CertFile, c.options.Webhook.KeyFile)
