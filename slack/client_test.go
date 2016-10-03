@@ -235,7 +235,7 @@ func TestSave(t *testing.T) {
 	cli := newClient("", ClientOptions{})
 	storage := storage.NewMemory()
 	cli.SetStorage(storage)
-	cli.AddBot("1", "foo")
+	cli.AddBot("1", "foo", nil)
 	cli.bots["1"].addConversation("2")
 
 	ok, _ := storage.BotExists(flamingo.StoredBot{ID: "1"})
@@ -249,9 +249,9 @@ func TestAddBotOnlyOnce(t *testing.T) {
 	cli := newClient("", ClientOptions{})
 	storage := storage.NewMemory()
 	cli.SetStorage(storage)
-	cli.AddBot("1", "foo")
-	cli.AddBot("2", "foo")
-	cli.AddBot("1", "foo")
+	cli.AddBot("1", "foo", nil)
+	cli.AddBot("2", "foo", nil)
+	cli.AddBot("1", "foo", nil)
 
 	bots, _ := storage.LoadBots()
 	assert.Equal(2, len(bots))
