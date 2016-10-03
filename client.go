@@ -25,7 +25,7 @@ type Client interface {
 	AddActionHandler(string, ActionHandler)
 
 	// AddBot adds a new bot with an ID and a token.
-	AddBot(id string, token string)
+	AddBot(id string, token string, extra interface{})
 
 	// SetIntroHandler sets the IntroHandler for the client.
 	SetIntroHandler(IntroHandler)

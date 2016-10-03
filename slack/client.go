@@ -232,7 +232,7 @@ func (c *slackClient) Use(middlewares ...flamingo.Middleware) {
 	}
 }
 
-func (c *slackClient) AddBot(id, token string) {
+func (c *slackClient) AddBot(id, token string, extra interface{}) {
 	c.Lock()
 	defer c.Unlock()
 
@@ -240,6 +240,7 @@ func (c *slackClient) AddBot(id, token string) {
 		ID:        id,
 		Token:     token,
 		CreatedAt: time.Now(),
+		Extra:     extra,
 	}
 	ok, err := c.storage.BotExists(bot)
 	if err != nil {
@@ -404,7 +405,7 @@ func (c *slackClient) loadFromStorage() error {
 
 	for _, b := range bots {
 		if _, ok := c.bots[b.ID]; !ok {
-			c.AddBot(b.ID, b.Token)
+			c.AddBot(b.ID, b.Token, nil)
 		}
 
 		convs, err := c.storage.LoadConversations(b)
