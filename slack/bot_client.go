@@ -167,7 +167,7 @@ func (c *botClient) handleMessageEvent(evt *slack.MessageEvent) {
 		}
 	}
 
-	log15.Debug("message for channel", "channel", evt.Channel, "text", evt.Text)
+	log15.Debug("message for channel", "channel", evt.Channel, "text", evt.Text, "from", evt.User, "bot", evt.BotID)
 	conv.messages <- evt
 }
 

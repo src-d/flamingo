@@ -128,7 +128,9 @@ func (c *botConversation) run() {
 
 		case action, ok := <-c.actions:
 			if c.working {
-				c.actions <- action
+				go func() {
+					c.actions <- action
+				}()
 				<-time.After(50 * time.Millisecond)
 				continue
 			}
