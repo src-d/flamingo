@@ -51,7 +51,7 @@ func main() {
 
 	ctrl := &helloController{}
 	client.AddController(ctrl)
-	client.AddBot(id, token)
+	client.AddBot(id, token, nil)
 	client.SetIntroHandler(ctrl)
 
 	log.Fatal(client.Run())
