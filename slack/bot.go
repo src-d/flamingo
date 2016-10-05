@@ -112,10 +112,10 @@ func (b *bot) directChannelForUser(username string) (string, error) {
 	return id, nil
 }
 
-func (b *bot) SayTo(username string, msg flamingo.OutgoingMessage) (string, error) {
+func (b *bot) SayTo(username string, msg flamingo.OutgoingMessage) (string, string, error) {
 	id, err := b.directChannelForUser(username)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	_, ts, err := b.api.PostMessage(id, msg.Text, createPostParams(msg))
@@ -123,7 +123,7 @@ func (b *bot) SayTo(username string, msg flamingo.OutgoingMessage) (string, erro
 		log15.Error("error posting message to user", "user", username, "error", err.Error(), "text", msg.Text)
 	}
 
-	return ts, err
+	return ts, id, err
 }
 
 func (b *bot) WaitForAction(id string, policy flamingo.ActionWaitingPolicy) (flamingo.Action, error) {
@@ -182,10 +182,10 @@ func (b *bot) Form(form flamingo.Form) (string, error) {
 	return ts, err
 }
 
-func (b *bot) SendFormTo(username string, form flamingo.Form) (string, error) {
+func (b *bot) SendFormTo(username string, form flamingo.Form) (string, string, error) {
 	id, err := b.directChannelForUser(username)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	params := formToMessage(b.ID(), id, form)
@@ -194,7 +194,7 @@ func (b *bot) SendFormTo(username string, form flamingo.Form) (string, error) {
 		log15.Error("error posting form", "err", err.Error())
 	}
 
-	return ts, err
+	return ts, id, err
 }
 
 func (b *bot) Image(img flamingo.Image) (string, error) {

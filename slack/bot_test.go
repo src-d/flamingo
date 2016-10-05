@@ -92,6 +92,10 @@ func ignoreID(id string, err error) error {
 	return err
 }
 
+func ignoreIDs(_, _ string, err error) error {
+	return err
+}
+
 func TestSay(t *testing.T) {
 	assert := assert.New(t)
 	mock := newapiMock(nil)
@@ -132,7 +136,7 @@ func TestSayTo(t *testing.T) {
 		},
 	}
 
-	assert.Nil(ignoreID(bot.SayTo("fooo", flamingo.NewOutgoingMessage("hi there"))))
+	assert.Nil(ignoreIDs(bot.SayTo("fooo", flamingo.NewOutgoingMessage("hi there"))))
 
 	assert.Equal(len(mock.msgs), 1)
 	assert.Equal(mock.msgs[0].channel, "destination")
@@ -408,7 +412,7 @@ func TestSendFormTo(t *testing.T) {
 		},
 	}
 
-	assert.Nil(ignoreID(bot.SendFormTo("fooo", flamingo.Form{
+	assert.Nil(ignoreIDs(bot.SendFormTo("fooo", flamingo.Form{
 		Title:   "title",
 		Text:    "text",
 		Color:   "color",

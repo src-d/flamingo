@@ -32,15 +32,15 @@ type Bot interface {
 	Say(OutgoingMessage) (string, error)
 
 	// SayTo sends the given message to the user whose username or id is given. Returns the ID
-	// of the message and an error, if any.
-	SayTo(string, OutgoingMessage) (string, error)
+	// of the message, the channel id, and an error, if any.
+	SayTo(string, OutgoingMessage) (string, string, error)
 
 	// Form posts a form and returns the ID of the form and an error, if any.
 	Form(Form) (string, error)
 
 	// SendFormTo sends the given form to the user whose username or id is given. Returns the ID
-	// of the message and an error, if any.
-	SendFormTo(string, Form) (string, error)
+	// of the message, the channel id, and an error, if any.
+	SendFormTo(string, Form) (string, string, error)
 
 	// Image posts an Image and returns the ID of the image message and an error,
 	// if any.
