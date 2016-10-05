@@ -24,8 +24,14 @@ type botConversation struct {
 	delegate handlerDelegate
 }
 
-func newBotConversation(bot, channelID string, rtm slackRTM, delegate handlerDelegate) (*botConversation, error) {
+func newBotConversation(bot, channelID string, rtm slackRTM, delegate handlerDelegate, members ...string) (*botConversation, error) {
 	var channel flamingo.Channel
+
+	var users = make([]flamingo.User, len(members))
+	for i, m := range members {
+		users[i] = flamingo.User{ID: m}
+	}
+
 	// Channel IDs prefixed with C are channels,
 	// prefixed with G are groups and prefixed with D are directs
 	if strings.HasPrefix(channelID, "C") {
@@ -40,12 +46,14 @@ func newBotConversation(bot, channelID string, rtm slackRTM, delegate handlerDel
 			Type:  flamingo.SlackClient,
 			IsDM:  !ch.IsChannel,
 			Extra: ch,
+			Users: users,
 		}
 	} else {
 		channel = flamingo.Channel{
-			ID:   channelID,
-			Type: flamingo.SlackClient,
-			IsDM: true,
+			ID:    channelID,
+			Type:  flamingo.SlackClient,
+			IsDM:  true,
+			Users: users,
 		}
 	}
 

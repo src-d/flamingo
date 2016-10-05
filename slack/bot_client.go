@@ -136,13 +136,13 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 		log15.Error("Real Time Error", "error", evt.Error())
 
 	case *slack.IMCreatedEvent:
-		c.handleNewConversation(evt.Channel.ID)
+		c.handleNewConversation(evt.Channel.ID, evt.User)
 
 	case *slack.GroupJoinedEvent:
-		c.handleNewConversation(evt.Channel.ID)
+		c.handleNewConversation(evt.Channel.ID, evt.Channel.Members...)
 
 	case *slack.ChannelJoinedEvent:
-		c.handleNewConversation(evt.Channel.ID)
+		c.handleNewConversation(evt.Channel.ID, evt.Channel.Members...)
 
 	case *slack.InvalidAuthEvent:
 		log15.Crit("Invalid credentials for bot", "bot", c.id)
@@ -171,8 +171,8 @@ func (c *botClient) handleMessageEvent(evt *slack.MessageEvent) {
 	conv.messages <- evt
 }
 
-func (c *botClient) handleNewConversation(channelID string) {
-	conv, err := c.newConversation(channelID)
+func (c *botClient) handleNewConversation(channelID string, members ...string) {
+	conv, err := c.newConversation(channelID, members...)
 	if err != nil {
 		log15.Error("unable to create conversation for bot", "channel", channelID, "bot", c.id, "error", err.Error())
 		return
@@ -181,11 +181,11 @@ func (c *botClient) handleNewConversation(channelID string) {
 	conv.handleIntro()
 }
 
-func (c *botClient) newConversation(channel string) (*botConversation, error) {
+func (c *botClient) newConversation(channel string, members ...string) (*botConversation, error) {
 	c.Lock()
 	defer c.Unlock()
 	log15.Debug("conversation does not exist for bot, creating", "channel", channel, "bot", c.id)
-	conv, err := newBotConversation(c.id, channel, c.rtm, c.delegate)
+	conv, err := newBotConversation(c.id, channel, c.rtm, c.delegate, members...)
 	if err != nil {
 		return nil, err
 	}
