@@ -44,7 +44,7 @@ func newBotConversation(bot, channelID string, rtm slackRTM, delegate handlerDel
 			ID:    ch.ID,
 			Name:  ch.Name,
 			Type:  flamingo.SlackClient,
-			IsDM:  !ch.IsChannel,
+			IsDM:  false,
 			Extra: ch,
 			Users: users,
 		}
@@ -52,7 +52,7 @@ func newBotConversation(bot, channelID string, rtm slackRTM, delegate handlerDel
 		channel = flamingo.Channel{
 			ID:    channelID,
 			Type:  flamingo.SlackClient,
-			IsDM:  true,
+			IsDM:  strings.HasPrefix(channelID, "D"),
 			Users: users,
 		}
 	}
