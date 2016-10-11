@@ -130,7 +130,7 @@ func (c *botClient) handleRTMEvent(e slack.RTMEvent) {
 		}
 
 	case *slack.LatencyReport:
-		log15.Info("Current latency", "latency", evt.Value)
+		log15.Debug("Current latency", "latency", evt.Value)
 
 	case *slack.RTMError:
 		log15.Error("Real Time Error", "error", evt.Error())
