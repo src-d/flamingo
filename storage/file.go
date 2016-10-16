@@ -38,16 +38,20 @@ func NewFile(file string) (flamingo.Storage, error) {
 	return storage, nil
 }
 
+func newBotStorage() botStorage {
+	return botStorage{
+		Bots:                  make(map[string]flamingo.StoredBot),
+		Conversations:         make(map[string][]flamingo.StoredConversation),
+		ExistingConversations: make(map[string]bool),
+	}
+}
+
 func (s *fileStorage) load() error {
 	s.Lock()
 	defer s.Unlock()
 	bytes, err := ioutil.ReadFile(s.file)
 	if os.IsNotExist(err) {
-		s.data = botStorage{
-			Bots:                  make(map[string]flamingo.StoredBot),
-			Conversations:         make(map[string][]flamingo.StoredConversation),
-			ExistingConversations: make(map[string]bool),
-		}
+		s.data = newBotStorage()
 		return nil
 	} else if err != nil {
 		return err
