@@ -316,6 +316,32 @@ func TestWaitForActionIgnorePolicy(t *testing.T) {
 	assert.Equal(len(mock.msgs), 0)
 }
 
+var errUserInfo = errors.New("couldn't get user info")
+
+type userInfoFailingAPI struct {
+	slackAPI
+}
+
+func (api userInfoFailingAPI) GetUserInfo(_ string) (*slack.User, error) {
+	return nil, errUserInfo
+}
+
+func TestWaitForActionConversionFail(t *testing.T) {
+	actions := make(chan slack.AttachmentActionCallback, 1)
+	bot := &bot{
+		api:     &userInfoFailingAPI{newapiMock(nil)},
+		actions: actions,
+	}
+
+	go func() {
+		<-time.After(50 * time.Millisecond)
+		actions <- slack.AttachmentActionCallback{CallbackID: "foo"}
+	}()
+
+	_, err := bot.WaitForAction("foo", flamingo.ActionWaitingPolicy{})
+	assert.Equal(t, err, errUserInfo)
+}
+
 func TestWaitForActionReplyPolicy(t *testing.T) {
 	assert := assert.New(t)
 	mock := newapiMock(nil)
