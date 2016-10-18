@@ -94,7 +94,11 @@ func (c *botClient) handleAction(channel string, action slack.AttachmentActionCa
 	c.RUnlock()
 	if !ok {
 		var err error
-		conv, err = c.newConversation(channel)
+		var alreadyInDB bool
+		conv, alreadyInDB, err = c.newConversation(channel)
+		if !alreadyInDB {
+			conv.handleIntro()
+		}
 		if err != nil {
 			log15.Error("unable to create conversation for bot", "channel", channel, "bot", c.id, "error", err.Error())
 			return
@@ -160,7 +164,11 @@ func (c *botClient) handleMessageEvent(evt *slack.MessageEvent) {
 	c.RUnlock()
 	if !ok {
 		var err error
-		conv, err = c.newConversation(evt.Channel)
+		var alreadyInDB bool
+		conv, alreadyInDB, err = c.newConversation(evt.Channel)
+		if !alreadyInDB {
+			conv.handleIntro()
+		}
 		if err != nil {
 			log15.Error("unable to create conversation for bot", "channel", evt.Channel, "bot", c.id, "error", err.Error())
 			return
@@ -172,7 +180,7 @@ func (c *botClient) handleMessageEvent(evt *slack.MessageEvent) {
 }
 
 func (c *botClient) handleNewConversation(channelID string, members ...string) {
-	conv, err := c.newConversation(channelID, members...)
+	conv, _, err := c.newConversation(channelID, members...)
 	if err != nil {
 		log15.Error("unable to create conversation for bot", "channel", channelID, "bot", c.id, "error", err.Error())
 		return
@@ -181,13 +189,13 @@ func (c *botClient) handleNewConversation(channelID string, members ...string) {
 	conv.handleIntro()
 }
 
-func (c *botClient) newConversation(channel string, members ...string) (*botConversation, error) {
+func (c *botClient) newConversation(channel string, members ...string) (*botConversation, bool, error) {
 	c.Lock()
 	defer c.Unlock()
 	log15.Debug("conversation does not exist for bot, creating", "channel", channel, "bot", c.id)
 	conv, err := newBotConversation(c.id, channel, c.rtm, c.delegate, members...)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	storage := c.delegate.Storage()
@@ -198,22 +206,22 @@ func (c *botClient) newConversation(channel string, members ...string) (*botConv
 	}
 	ok, err := storage.ConversationExists(conversation)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	if !ok {
 		if err := storage.StoreConversation(conversation); err != nil {
-			return nil, err
+			return nil, false, err
 		}
 	}
 
 	c.conversations[channel] = conv
 	go conv.run()
-	return conv, nil
+	return conv, ok, nil
 }
 
 func (c *botClient) addConversation(id string) error {
-	_, err := c.newConversation(id)
+	_, _, err := c.newConversation(id)
 	return err
 }
 

@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+var existentChannel string = "existentChannel"
+
 type slackRTMMock struct {
 	events chan slack.RTMEvent
 	apiMock
@@ -71,6 +73,28 @@ func TestHandleAction(t *testing.T) {
 		assert.FailNow("action should not have been received by conversation")
 	case <-time.After(50 * time.Millisecond):
 	}
+}
+
+func TestHandleActionInitMessage(t *testing.T) {
+	assert := assert.New(t)
+	_, helloCont, _, botCli := getSlackMocks()
+	defer botCli.stop()
+
+	botCli.handleAction(existentChannel, slack.AttachmentActionCallback{
+		CallbackID: "foo",
+	})
+	conv := botCli.conversations[existentChannel]
+	<-conv.actions
+	assert.Equal(1, openedConversationsCount(botCli))
+	assert.Equal(0, calledIntroCount(helloCont))
+
+	botCli.handleAction("notExistentChannel2", slack.AttachmentActionCallback{
+		CallbackID: "foo",
+	})
+	conv2 := botCli.conversations["notExistentChannel2"]
+	<-conv2.actions
+	assert.Equal(2, openedConversationsCount(botCli))
+	assert.Equal(1, calledIntroCount(helloCont))
 }
 
 func TestHandleRTMEvent(t *testing.T) {
@@ -154,6 +178,20 @@ func TestHandleRTMEventOpenConvo(t *testing.T) {
 	client.Lock()
 	assert.Equal(2, len(client.conversations))
 	client.Unlock()
+}
+
+func TestHandleRTMEventInitMessage(t *testing.T) {
+	assert := assert.New(t)
+	rtm, helloCont, _, botCli := getSlackMocks()
+	defer botCli.stop()
+
+	sendRTMMessageEvent(rtm, existentChannel)
+	assert.Equal(1, openedConversationsCount(botCli))
+	assert.Equal(0, calledIntroCount(helloCont))
+
+	sendRTMMessageEvent(rtm, "notExistentChannel")
+	assert.Equal(2, openedConversationsCount(botCli))
+	assert.Equal(1, calledIntroCount(helloCont))
 }
 
 func TestHandleIMCreatedEvent(t *testing.T) {
@@ -240,4 +278,51 @@ func TestHandleJob(t *testing.T) {
 	})
 
 	assert.Equal(t, int32(4), atomic.LoadInt32(&executed))
+}
+
+func getSlackMocks() (*slackRTMMock, *helloCtrl, *slackClient, *botClient) {
+	slackRTM := &slackRTMMock{
+		events: make(chan slack.RTMEvent),
+	}
+
+	helloController := &helloCtrl{}
+	cli := NewClient("", ClientOptions{Debug: true}).(*slackClient)
+	cli.SetIntroHandler(helloController)
+
+	clientBot := newBotClient(
+		"aaaa",
+		slackRTM,
+		cli,
+	)
+
+	conv, _, _ := clientBot.newConversation("existentChannel")
+	conv.closed <- struct{}{}
+
+	return slackRTM, helloController, cli, clientBot
+}
+
+func sendRTMMessageEvent(rtm *slackRTMMock, channel string) {
+	rtm.events <- slack.RTMEvent{
+		Data: &slack.MessageEvent{
+			Msg: slack.Msg{
+				Channel: channel,
+				Text:    "text",
+			},
+		},
+	}
+}
+
+func openedConversationsCount(botCli *botClient) int {
+	<-time.After(50 * time.Millisecond)
+	botCli.Lock()
+	number := len(botCli.conversations)
+	botCli.Unlock()
+	return number
+}
+
+func calledIntroCount(helloCont *helloCtrl) int {
+	helloCont.Lock()
+	number := helloCont.calledIntro
+	helloCont.Unlock()
+	return number
 }
