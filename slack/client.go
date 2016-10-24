@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -141,10 +140,12 @@ func (c *slackClient) ErrorHandler() flamingo.ErrorHandler {
 func (c *slackClient) SetLogOutput(w io.Writer) {
 	var nilWriter io.Writer
 
-	var format = log15.LogfmtFormat()
-	if w == nilWriter || w == nil {
-		w = os.Stdout
-		format = log15.TerminalFormat()
+	handler := log15.StdoutHandler
+	if w != nilWriter && w != nil {
+		handler = log15.MultiHandler(
+			log15.StdoutHandler,
+			log15.StreamHandler(w, log15.LogfmtFormat()),
+		)
 	}
 
 	var maxLvl = log15.LvlInfo
@@ -152,7 +153,7 @@ func (c *slackClient) SetLogOutput(w io.Writer) {
 		maxLvl = log15.LvlDebug
 	}
 
-	log15.Root().SetHandler(log15.LvlFilterHandler(maxLvl, log15.StreamHandler(w, format)))
+	log15.Root().SetHandler(log15.LvlFilterHandler(maxLvl, handler))
 }
 
 func (c *slackClient) AddController(ctrl flamingo.Controller) {
