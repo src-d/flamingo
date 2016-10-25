@@ -23,6 +23,11 @@ type Form struct {
 	Fields []FieldGroup
 }
 
+// String returns the string version
+func (f Form) String() string {
+	return f.Text
+}
+
 // Field is an element of a FieldGroup.
 type Field interface {
 	isField()
@@ -202,6 +207,11 @@ type Image struct {
 	Text string
 	// ThumbnailURL is the URL of the thumbnail to be displayed.
 	ThumbnailURL string
+}
+
+// String returns the string version
+func (f Image) String() string {
+	return f.Text
 }
 
 func (f Image) isField() {}

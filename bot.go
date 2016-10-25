@@ -1,5 +1,7 @@
 package flamingo
 
+import "fmt"
+
 // AnswerChecker is a function that will determine if the provided
 // answer is correct analysing the answer Message. If the function
 // returns nil it is assumed the answer is valid, otherwise it is
@@ -13,9 +15,6 @@ type AnswerChecker func(Message) *OutgoingMessage
 type Bot interface {
 	// ID returns the ID of the bot.
 	ID() string
-
-	// ChannelID returns the ID of the used Channel.
-	ChannelID() string
 
 	// Reply replies a Message with an OutgoingMessage and returns the ID of the
 	// reply along with an error, if any.
@@ -82,3 +81,6 @@ type Bot interface {
 	// action queue and it will be processed asynchronously.
 	InvokeAction(id string, user User, action UserAction)
 }
+
+// Sendable is the interface that must implements structs that are being sent by a Bot
+type Sendable fmt.Stringer

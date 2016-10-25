@@ -7,6 +7,8 @@ import "io"
 // more than one platform you will have to start several clients
 // for different platforms.
 type Client interface {
+	Broadcaster
+
 	// SetLogOutput will write the logs to the given io.Writer.
 	SetLogOutput(io.Writer)
 
@@ -53,7 +55,7 @@ type Client interface {
 type Broadcaster interface {
 	// Broadcast sends message, and returns the number of
 	// processed bots, conversations, errors and error occurred
-	Broadcast(interface{}, Condition) (uint64, uint64, uint64, error)
+	Broadcast(Sendable, CanBeBroadcasted) (bots uint64, convs uint64, errors uint64, err error)
 }
 
 // ErrorHandler will handle an error after a panic. The parameter it receives is the
@@ -77,3 +79,19 @@ const (
 // Job is a function that will execute like a cron job after a
 // certain amount of time to perform some kind of task.
 type Job func(Bot, Channel) error
+
+//BroadcastFilter returns true if message can be broadcasted to bot and Channel
+type CanBeBroadcasted func(botID string, channel Channel, msg Sendable) bool
+
+//AndBroadcastRule returns a new CanBeBroadcasted rule merging many rules witn AND
+func AndBroadcastRule(rules ...CanBeBroadcasted) CanBeBroadcasted {
+	return func(botID string, channel Channel, msg Sendable) bool {
+		for _, canBe := range rules {
+			if canBe != nil && !canBe(botID, channel, msg) {
+				return false
+			}
+		}
+
+		return true
+	}
+}

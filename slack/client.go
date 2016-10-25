@@ -418,25 +418,16 @@ func (c *slackClient) loadFromStorage() error {
 
 // Broadcast sends message, and returns the number of
 // processed bots, conversations, errors and error occurred
-func (c *slackClient) Broadcast(msg interface{}, cond flamingo.Condition) (uint64, uint64, uint64, error) {
-	var err error
-	conversationsCount := uint64(0)
-	clientBotsCount := uint64(0)
-	errorsFound := uint64(0)
-
+func (c *slackClient) Broadcast(msg flamingo.Sendable, isValid flamingo.CanBeBroadcasted) (
+	clientBotsCount uint64, conversationsCount uint64, errorsFound uint64, err error,
+) {
+	var convs, errors uint64
 	for _, clientBot := range c.bots {
-		botClient := clientBot.(*botClient)
-		if cond.IsValidBot == nil || cond.IsValidBot(botClient.id, msg) {
+		convs, errors = broadCastTo(clientBot.(*botClient), msg, isValid)
+		errorsFound += errors
+		conversationsCount += convs
+		if convs > 0 {
 			clientBotsCount++
-			for _, conversation := range botClient.conversations {
-				if cond.IsValidChannel == nil || cond.IsValidChannel(conversation.channel, msg) {
-					err := send(conversation.createBot(), msg)
-					conversationsCount++
-					if err != nil {
-						errorsFound++
-					}
-				}
-			}
 		}
 	}
 
@@ -444,10 +435,26 @@ func (c *slackClient) Broadcast(msg interface{}, cond flamingo.Condition) (uint6
 		err = fmt.Errorf("%d messages could not be delivered", errorsFound)
 	}
 
-	return clientBotsCount, conversationsCount, errorsFound, err
+	return
 }
 
-func send(bot flamingo.Bot, msg interface{}) error {
+func broadCastTo(botClient *botClient, msg flamingo.Sendable, isValid flamingo.CanBeBroadcasted) (
+	sentCount uint64, errorsFound uint64,
+) {
+	for _, conversation := range botClient.conversations {
+		if isValid(botClient.id, conversation.channel, msg) {
+			err := send(conversation.createBot(), msg)
+			sentCount++
+			if err != nil {
+				errorsFound++
+			}
+		}
+	}
+
+	return
+}
+
+func send(bot flamingo.Bot, msg flamingo.Sendable) error {
 	var err error
 	switch msg.(type) {
 	case flamingo.OutgoingMessage:
