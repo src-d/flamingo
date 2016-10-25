@@ -1,9 +1,6 @@
 package flamingo
 
-import (
-	"io"
-	"time"
-)
+import "io"
 
 // Client is an abstract interface of a platforms-specific client.
 // A client can only run for one platform. If you need to handle
