@@ -51,6 +51,14 @@ type Client interface {
 	Stop() error
 }
 
+// Broadcaster defines a client that can send messages to the registered conversations
+// following certain condition
+type Broadcaster interface {
+	// Broadcast sends message, and returns the number of
+	// processed bots, conversations, errors and error occurred
+	Broadcast(interface{}, Condition) (uint64, uint64, uint64, error)
+}
+
 // ErrorHandler will handle an error after a panic. The parameter it receives is the
 // result of recover()
 type ErrorHandler func(interface{})
@@ -125,3 +133,15 @@ func (s *dateSchedule) Next(now time.Time) time.Time {
 
 	return d
 }
+
+//Condition modelates a group of conditions
+type Condition struct {
+	IsValidChannel ValidChannel
+	IsValidBot     ValidBot
+}
+
+//ValidChannel returns true if the passed Channel and msg are valid
+type ValidChannel func(channel Channel, msg interface{}) bool
+
+//ValidChannel returns true if the passed botId and msg are valid
+type ValidBot func(botId string, msg interface{}) bool

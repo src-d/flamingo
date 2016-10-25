@@ -2,6 +2,7 @@ package slack
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -412,6 +413,52 @@ func (c *slackClient) loadFromStorage() error {
 	}
 
 	return nil
+}
+
+// Broadcast sends message, and returns the number of
+// processed bots, conversations, errors and error occurred
+func (c *slackClient) Broadcast(msg interface{}, cond flamingo.Condition) (uint64, uint64, uint64, error) {
+	var err error
+	conversationsCount := uint64(0)
+	clientBotsCount := uint64(0)
+	errorsFound := uint64(0)
+
+	for _, clientBot := range c.bots {
+		botClient := clientBot.(*botClient)
+		if cond.IsValidBot == nil || cond.IsValidBot(botClient.id, msg) {
+			clientBotsCount++
+			for _, conversation := range botClient.conversations {
+				if cond.IsValidChannel == nil || cond.IsValidChannel(conversation.channel, msg) {
+					err := send(conversation.createBot(), msg)
+					conversationsCount++
+					if err != nil {
+						errorsFound++
+					}
+				}
+			}
+		}
+	}
+
+	if errorsFound > 0 {
+		err = fmt.Errorf("%d messages could not be delivered", errorsFound)
+	}
+
+	return clientBotsCount, conversationsCount, errorsFound, err
+}
+
+func send(bot flamingo.Bot, msg interface{}) error {
+	var err error
+	switch msg.(type) {
+	case flamingo.OutgoingMessage:
+		_, err = bot.Say(msg.(flamingo.OutgoingMessage))
+	case flamingo.Form:
+		_, err = bot.Form(msg.(flamingo.Form))
+	case flamingo.Image:
+		_, err = bot.Image(msg.(flamingo.Image))
+	default:
+		return fmt.Errorf("Message tried to send is not allowed for broadcasting")
+	}
+	return err
 }
 
 func (c *slackClient) Run() error {
