@@ -95,19 +95,19 @@ func (s *intervalSchedule) Next(now time.Time) time.Time {
 	return now.Add(s.every)
 }
 
-type dateSchedule struct {
+type timeSchedule struct {
 	hour, minutes, seconds int
 }
 
-// NewDateSchedule creates a ScheduleTime that runs once a day at a given
+// NewTimeSchedule creates a ScheduleTime that runs once a day at a given
 // hour, minutes and seconds.
-func NewDateSchedule(hour, minutes, seconds int) ScheduleTime {
-	return &dateSchedule{
+func NewTimeSchedule(hour, minutes, seconds int) ScheduleTime {
+	return &timeSchedule{
 		hour, minutes, seconds,
 	}
 }
 
-func (s *dateSchedule) Next(now time.Time) time.Time {
+func (s *timeSchedule) Next(now time.Time) time.Time {
 	d := time.Date(
 		now.Year(),
 		now.Month(),
@@ -124,4 +124,39 @@ func (s *dateSchedule) Next(now time.Time) time.Time {
 	}
 
 	return d
+}
+
+type dayTimeSchedule struct {
+	days         map[time.Weekday]struct{}
+	timeSchedule ScheduleTime
+}
+
+// NewDayTimeSchedule creates a ScheduleTime that runs once a day at a given
+// hour, minutes and seconds only on the given set of days.
+func NewDayTimeSchedule(days []time.Weekday, hour, minutes, seconds int) ScheduleTime {
+	var daySet = make(map[time.Weekday]struct{})
+	for _, d := range days {
+		daySet[d] = struct{}{}
+	}
+
+	return &dayTimeSchedule{
+		daySet,
+		NewTimeSchedule(hour, minutes, seconds),
+	}
+}
+
+var zero time.Time
+
+func (s *dayTimeSchedule) Next(now time.Time) time.Time {
+	if len(s.days) == 0 {
+		return zero
+	}
+
+	for {
+		if _, ok := s.days[now.Weekday()]; ok {
+			return s.timeSchedule.Next(now)
+		}
+
+		now = now.Add(24 * time.Hour)
+	}
 }
