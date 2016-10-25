@@ -31,6 +31,10 @@ func (b *bot) ID() string {
 	return b.id
 }
 
+func (b *bot) ChannelID() string {
+	return b.channel.ID
+}
+
 func (b *bot) Reply(replyTo flamingo.Message, msg flamingo.OutgoingMessage) (string, error) {
 	msg.Text = fmt.Sprintf("@%s: %s", replyTo.User.Username, msg.Text)
 	return b.Say(msg)
