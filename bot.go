@@ -14,6 +14,9 @@ type Bot interface {
 	// ID returns the ID of the bot.
 	ID() string
 
+	// ChannelID returns the ID of the used Channel.
+	ChannelID() string
+
 	// Reply replies a Message with an OutgoingMessage and returns the ID of the
 	// reply along with an error, if any.
 	Reply(Message, OutgoingMessage) (string, error)

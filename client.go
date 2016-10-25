@@ -48,6 +48,14 @@ type Client interface {
 	Stop() error
 }
 
+// Broadcaster defines a client that can send messages to the registered conversations
+// following certain condition
+type Broadcaster interface {
+	// Broadcast sends message, and returns the number of
+	// processed bots, conversations, errors and error occurred
+	Broadcast(interface{}, Condition) (uint64, uint64, uint64, error)
+}
+
 // ErrorHandler will handle an error after a panic. The parameter it receives is the
 // result of recover()
 type ErrorHandler func(interface{})

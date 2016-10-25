@@ -282,6 +282,14 @@ func TestWrap(t *testing.T) {
 	require.Equal([]string{"1", "2", "3"}, result)
 }
 
+func TestBroadcast(t *testing.T) {
+	//TODO:  Broadcast(msg interface{}, cond flamingo.Condition) (uint64, uint64, uint64, error) {
+	//TODO: restrictiveBotId -> 0, 0, 0, nil
+	//TODO: restrictiveChannelId -> n, 0, 0, nil
+	//TODO: normal conds -> n, m, 0, nil
+	//TODO: strangeMessage -> 0, 0, m, err
+}
+
 func newClient(token string, options ClientOptions) *slackClient {
 	options.Debug = true
 	options.Webhook.VerificationToken = token
