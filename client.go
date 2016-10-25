@@ -2,7 +2,6 @@ package flamingo
 
 import (
 	"io"
-	"time"
 )
 
 // Client is an abstract interface of a platforms-specific client.
