@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -12,7 +11,7 @@ func TestIntervalSchedule(t *testing.T) {
 	s := NewIntervalSchedule(4 * time.Second)
 	now := time.Now()
 
-	assert.Equal(t, 4*time.Second, s.Next(now).Sub(now))
+	require.Equal(t, 4*time.Second, s.Next(now).Sub(now))
 }
 
 func TestTimeSchedule(t *testing.T) {
@@ -21,12 +20,12 @@ func TestTimeSchedule(t *testing.T) {
 	now = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	d := time.Date(now.Year(), now.Month(), now.Day(), 15, 30, 25, 0, now.Location())
 
-	assert.Equal(t, d, s.Next(now))
+	require.Equal(t, d, s.Next(now))
 
 	now = time.Date(now.Year(), now.Month(), now.Day(), 16, 0, 0, 0, now.Location())
 	d = time.Date(now.Year(), now.Month(), now.Day()+1, 15, 30, 25, 0, now.Location())
 
-	assert.Equal(t, d, s.Next(now))
+	require.Equal(t, d, s.Next(now))
 }
 
 func TestDayTimeSchedule(t *testing.T) {
