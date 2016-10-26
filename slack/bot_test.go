@@ -8,7 +8,7 @@ import (
 
 	"github.com/mvader/slack"
 	"github.com/src-d/flamingo"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 type postMessageArgs struct {
@@ -97,7 +97,7 @@ func ignoreIDs(_, _ string, err error) error {
 }
 
 func TestSay(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	bot := &bot{
 		id:  "bar",
@@ -107,22 +107,22 @@ func TestSay(t *testing.T) {
 		},
 	}
 
-	assert.Nil(ignoreID(bot.Say(flamingo.NewOutgoingMessage("hi there"))))
-	assert.Nil(ignoreID(bot.Say(flamingo.OutgoingMessage{
+	require.Nil(ignoreID(bot.Say(flamingo.NewOutgoingMessage("hi there"))))
+	require.Nil(ignoreID(bot.Say(flamingo.OutgoingMessage{
 		ChannelID: "bar",
 		Text:      "hi there you too",
 	})))
 
-	assert.Equal(len(mock.msgs), 2)
-	assert.Equal(mock.msgs[0].channel, "foo")
-	assert.Equal(mock.msgs[0].text, "hi there")
+	require.Equal(len(mock.msgs), 2)
+	require.Equal(mock.msgs[0].channel, "foo")
+	require.Equal(mock.msgs[0].text, "hi there")
 
-	assert.Equal(mock.msgs[1].channel, "bar")
-	assert.Equal(mock.msgs[1].text, "hi there you too")
+	require.Equal(mock.msgs[1].channel, "bar")
+	require.Equal(mock.msgs[1].text, "hi there you too")
 }
 
 func TestSayTo(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	mock.setUser(&slack.User{
 		ID:   "destination",
@@ -136,15 +136,15 @@ func TestSayTo(t *testing.T) {
 		},
 	}
 
-	assert.Nil(ignoreIDs(bot.SayTo("fooo", flamingo.NewOutgoingMessage("hi there"))))
+	require.Nil(ignoreIDs(bot.SayTo("fooo", flamingo.NewOutgoingMessage("hi there"))))
 
-	assert.Equal(len(mock.msgs), 1)
-	assert.Equal(mock.msgs[0].channel, "destination")
-	assert.Equal(mock.msgs[0].text, "hi there")
+	require.Equal(len(mock.msgs), 1)
+	require.Equal(mock.msgs[0].channel, "destination")
+	require.Equal(mock.msgs[0].text, "hi there")
 }
 
 func TestImage(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	bot := &bot{
 		id:  "bar",
@@ -154,15 +154,15 @@ func TestImage(t *testing.T) {
 		},
 	}
 
-	assert.Nil(ignoreID(bot.Image(flamingo.Image{URL: "foo"})))
+	require.Nil(ignoreID(bot.Image(flamingo.Image{URL: "foo"})))
 
-	assert.Equal(len(mock.msgs), 1)
-	assert.Equal(len(mock.msgs[0].params.Attachments), 1)
-	assert.Equal(mock.msgs[0].params.Attachments[0].ImageURL, "foo")
+	require.Equal(len(mock.msgs), 1)
+	require.Equal(len(mock.msgs[0].params.Attachments), 1)
+	require.Equal(mock.msgs[0].params.Attachments[0].ImageURL, "foo")
 }
 
 func TestReply(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	bot := &bot{
 		id:  "bar",
@@ -172,20 +172,20 @@ func TestReply(t *testing.T) {
 		},
 	}
 
-	assert.Nil(ignoreID(bot.Reply(
+	require.Nil(ignoreID(bot.Reply(
 		flamingo.Message{
 			User: flamingo.User{Username: "baz"},
 		},
 		flamingo.NewOutgoingMessage("hi there"),
 	)))
 
-	assert.Equal(len(mock.msgs), 1)
-	assert.Equal(mock.msgs[0].channel, "foo")
-	assert.Equal(mock.msgs[0].text, "@baz: hi there")
+	require.Equal(len(mock.msgs), 1)
+	require.Equal(mock.msgs[0].channel, "foo")
+	require.Equal(mock.msgs[0].text, "@baz: hi there")
 }
 
 func TestAsk(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 1)
 	bot := &bot{
@@ -205,12 +205,12 @@ func TestAsk(t *testing.T) {
 	}
 
 	_, msg, err := bot.Ask(flamingo.NewOutgoingMessage("how are you?"))
-	assert.Nil(err)
-	assert.Equal(msg.Text, "fine, thanks")
+	require.Nil(err)
+	require.Equal(msg.Text, "fine, thanks")
 }
 
 func TestAskUntil(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 2)
 	bot := &bot{
@@ -237,13 +237,13 @@ func TestAskUntil(t *testing.T) {
 
 		return &flamingo.OutgoingMessage{Text: "nope"}
 	})
-	assert.Nil(err)
-	assert.Equal(2, len(mock.msgs))
-	assert.Equal(msg.Text, "2")
+	require.Nil(err)
+	require.Equal(2, len(mock.msgs))
+	require.Equal(msg.Text, "2")
 }
 
 func TestConversation(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 2)
 	bot := &bot{
@@ -271,15 +271,15 @@ func TestConversation(t *testing.T) {
 		flamingo.NewOutgoingMessage("hi, how are you?"),
 		flamingo.NewOutgoingMessage("fine, too"),
 	})
-	assert.Nil(err)
-	assert.Equal(len(msgs), 2)
+	require.Nil(err)
+	require.Equal(len(msgs), 2)
 
-	assert.Equal(msgs[0].Text, "fine, thanks. And you?")
-	assert.Equal(msgs[1].Text, "cool")
+	require.Equal(msgs[0].Text, "fine, thanks. And you?")
+	require.Equal(msgs[1].Text, "cool")
 }
 
 func TestWaitForActionIgnorePolicy(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 1)
 	actions := make(chan slack.AttachmentActionCallback, 1)
@@ -311,9 +311,9 @@ func TestWaitForActionIgnorePolicy(t *testing.T) {
 	}()
 
 	action, err := bot.WaitForAction("foo", flamingo.IgnorePolicy())
-	assert.Nil(err)
-	assert.Equal(action.Extra.(slack.AttachmentActionCallback).CallbackID, "foo")
-	assert.Equal(len(mock.msgs), 0)
+	require.Nil(err)
+	require.Equal(action.Extra.(slack.AttachmentActionCallback).CallbackID, "foo")
+	require.Equal(len(mock.msgs), 0)
 }
 
 var errUserInfo = errors.New("couldn't get user info")
@@ -339,11 +339,11 @@ func TestWaitForActionConversionFail(t *testing.T) {
 	}()
 
 	_, err := bot.WaitForAction("foo", flamingo.ActionWaitingPolicy{})
-	assert.Equal(t, err, errUserInfo)
+	require.Equal(t, err, errUserInfo)
 }
 
 func TestWaitForActionReplyPolicy(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	ch := make(chan *slack.MessageEvent, 1)
 	actions := make(chan slack.AttachmentActionCallback, 1)
@@ -381,14 +381,14 @@ func TestWaitForActionReplyPolicy(t *testing.T) {
 	}()
 
 	action, err := bot.WaitForAction("foo", flamingo.ReplyPolicy("wait, what?"))
-	assert.Nil(err)
-	assert.Equal(action.UserAction.Value, "foo-1")
-	assert.Equal(action.Extra.(slack.AttachmentActionCallback).CallbackID, "foo")
-	assert.Equal(len(mock.msgs), 2)
+	require.Nil(err)
+	require.Equal(action.UserAction.Value, "foo-1")
+	require.Equal(action.Extra.(slack.AttachmentActionCallback).CallbackID, "foo")
+	require.Equal(len(mock.msgs), 2)
 }
 
 func TestForm(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	bot := &bot{
 		id:  "bar",
@@ -398,7 +398,7 @@ func TestForm(t *testing.T) {
 		},
 	}
 
-	assert.Nil(ignoreID(bot.Form(flamingo.Form{
+	require.Nil(ignoreID(bot.Form(flamingo.Form{
 		Title:   "title",
 		Text:    "text",
 		Color:   "color",
@@ -417,14 +417,14 @@ func TestForm(t *testing.T) {
 		},
 	})))
 
-	assert.Equal(len(mock.msgs), 1)
-	assert.Equal(mock.msgs[0].channel, "foo")
-	assert.Equal(mock.msgs[0].text, " ")
-	assert.Equal(len(mock.msgs[0].params.Attachments), 1)
+	require.Equal(len(mock.msgs), 1)
+	require.Equal(mock.msgs[0].channel, "foo")
+	require.Equal(mock.msgs[0].text, " ")
+	require.Equal(len(mock.msgs[0].params.Attachments), 1)
 }
 
 func TestSendFormTo(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	mock.setUser(&slack.User{
 		ID:   "destination",
@@ -438,7 +438,7 @@ func TestSendFormTo(t *testing.T) {
 		},
 	}
 
-	assert.Nil(ignoreIDs(bot.SendFormTo("fooo", flamingo.Form{
+	require.Nil(ignoreIDs(bot.SendFormTo("fooo", flamingo.Form{
 		Title:   "title",
 		Text:    "text",
 		Color:   "color",
@@ -457,14 +457,14 @@ func TestSendFormTo(t *testing.T) {
 		},
 	})))
 
-	assert.Equal(len(mock.msgs), 1)
-	assert.Equal(mock.msgs[0].channel, "destination")
-	assert.Equal(mock.msgs[0].text, " ")
-	assert.Equal(len(mock.msgs[0].params.Attachments), 1)
+	require.Equal(len(mock.msgs), 1)
+	require.Equal(mock.msgs[0].channel, "destination")
+	require.Equal(mock.msgs[0].text, " ")
+	require.Equal(len(mock.msgs[0].params.Attachments), 1)
 }
 
 func TestUpdateForm(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	bot := &bot{
 		id:  "bar",
@@ -474,7 +474,7 @@ func TestUpdateForm(t *testing.T) {
 		},
 	}
 
-	assert.Nil(ignoreID(bot.UpdateForm("id", flamingo.Form{
+	require.Nil(ignoreID(bot.UpdateForm("id", flamingo.Form{
 		Title:   "title",
 		Text:    "text",
 		Color:   "color",
@@ -493,16 +493,16 @@ func TestUpdateForm(t *testing.T) {
 		},
 	})))
 
-	assert.Equal(len(mock.msgs), 0)
-	assert.Equal(len(mock.updates), 1)
-	assert.Equal(mock.updates[0].channel, "foo")
-	assert.Equal(mock.updates[0].id, "id")
-	assert.Equal(mock.updates[0].text, " ")
-	assert.Equal(len(mock.updates[0].params.Attachments), 1)
+	require.Equal(len(mock.msgs), 0)
+	require.Equal(len(mock.updates), 1)
+	require.Equal(mock.updates[0].channel, "foo")
+	require.Equal(mock.updates[0].id, "id")
+	require.Equal(mock.updates[0].text, " ")
+	require.Equal(len(mock.updates[0].params.Attachments), 1)
 }
 
 func TestUpdateMessage(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := newapiMock(nil)
 	bot := &bot{
 		id:  "bar",
@@ -512,14 +512,14 @@ func TestUpdateMessage(t *testing.T) {
 		},
 	}
 
-	assert.Nil(ignoreID(bot.UpdateMessage("id", "new text")))
+	require.Nil(ignoreID(bot.UpdateMessage("id", "new text")))
 
-	assert.Equal(len(mock.msgs), 0)
-	assert.Equal(len(mock.updates), 1)
-	assert.Equal(mock.updates[0].channel, "foo")
-	assert.Equal(mock.updates[0].id, "id")
-	assert.Equal(mock.updates[0].text, "new text")
-	assert.Equal(len(mock.updates[0].params.Attachments), 0)
+	require.Equal(len(mock.msgs), 0)
+	require.Equal(len(mock.updates), 1)
+	require.Equal(mock.updates[0].channel, "foo")
+	require.Equal(mock.updates[0].id, "id")
+	require.Equal(mock.updates[0].text, "new text")
+	require.Equal(len(mock.updates[0].params.Attachments), 0)
 }
 
 func TestInvokeAction(t *testing.T) {
@@ -545,13 +545,13 @@ func TestInvokeAction(t *testing.T) {
 	)
 
 	action := <-bot.actions
-	assert.Equal(t, "action", action.CallbackID)
-	assert.Equal(t, 1, len(action.Actions))
-	assert.Equal(t, "fooo", action.Actions[0].Name)
-	assert.Equal(t, "baar", action.Actions[0].Value)
-	assert.Equal(t, "foo", action.User.ID)
-	assert.Equal(t, "bar", action.User.RealName)
-	assert.Equal(t, "baz", action.User.Name)
-	assert.Equal(t, "qux", action.User.Profile.Email)
-	assert.Equal(t, "chan", action.Channel.ID)
+	require.Equal(t, "action", action.CallbackID)
+	require.Equal(t, 1, len(action.Actions))
+	require.Equal(t, "fooo", action.Actions[0].Name)
+	require.Equal(t, "baar", action.Actions[0].Value)
+	require.Equal(t, "foo", action.User.ID)
+	require.Equal(t, "bar", action.User.RealName)
+	require.Equal(t, "baz", action.User.Name)
+	require.Equal(t, "qux", action.User.Profile.Email)
+	require.Equal(t, "chan", action.Channel.ID)
 }

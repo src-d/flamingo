@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/src-d/flamingo"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCreatePostParams(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 
 	msg := flamingo.NewOutgoingMessage("foo")
 	msg.Sender = &flamingo.MessageSender{
@@ -18,8 +18,8 @@ func TestCreatePostParams(t *testing.T) {
 	}
 
 	params := createPostParams(msg)
-	assert.Equal(params.IconURL, "bar")
-	assert.Equal(params.Username, "foo")
+	require.Equal(params.IconURL, "bar")
+	require.Equal(params.Username, "foo")
 }
 
 func TestParseTimestamp(t *testing.T) {
@@ -32,12 +32,12 @@ func TestParseTimestamp(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		assert.Equal(t, parseTimestamp(c.ts), c.expected)
+		require.Equal(t, parseTimestamp(c.ts), c.expected)
 	}
 }
 
 func TestImageToMessage(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 
 	params := imageToMessage(flamingo.Image{
 		ThumbnailURL: "foo",
@@ -45,9 +45,9 @@ func TestImageToMessage(t *testing.T) {
 		Text:         "baz",
 	})
 
-	assert.Equal(1, len(params.Attachments))
-	assert.Equal("bar", params.Attachments[0].ImageURL)
-	assert.Equal("baz", params.Attachments[0].Title)
-	assert.Equal("bar", params.Attachments[0].TitleLink)
-	assert.Equal("foo", params.Attachments[0].ThumbURL)
+	require.Equal(1, len(params.Attachments))
+	require.Equal("bar", params.Attachments[0].ImageURL)
+	require.Equal("baz", params.Attachments[0].Title)
+	require.Equal("bar", params.Attachments[0].TitleLink)
+	require.Equal("foo", params.Attachments[0].ThumbURL)
 }

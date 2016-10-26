@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var testCallback = `{
@@ -40,7 +40,7 @@ var testCallback = `{
 }`
 
 func TestWebhook(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	cases := []struct {
 		body          string
 		status        int
@@ -60,15 +60,15 @@ func TestWebhook(t *testing.T) {
 		data.Set("payload", c.body)
 
 		resp, err := http.Post(srv.URL, "application/x-www-form-urlencoded", bytes.NewBufferString(data.Encode()))
-		assert.Nil(err)
-		assert.Equal(resp.StatusCode, c.status)
+		require.Nil(err)
+		require.Equal(resp.StatusCode, c.status)
 
 		if c.shouldConsume {
 			select {
 			case cb := <-w.Consume():
-				assert.Equal(cb.CallbackID, c.callback)
+				require.Equal(cb.CallbackID, c.callback)
 			case <-time.After(10 * time.Millisecond):
-				assert.FailNow("timeout")
+				require.FailNow("timeout")
 			}
 		}
 		srv.Close()

@@ -4,21 +4,21 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestMessageMatchString(t *testing.T) {
 	msg := Message{Text: " foo Bar Baz  "}
-	assert.True(t, msg.MatchString("foo bar baz"))
-	assert.True(t, msg.MatchString("  foo bar baz  "))
-	assert.True(t, msg.MatchString("foo Bar baz"))
+	require.True(t, msg.MatchString("foo bar baz"))
+	require.True(t, msg.MatchString("  foo bar baz  "))
+	require.True(t, msg.MatchString("foo Bar baz"))
 }
 
 func TestMessageMatchStringCase(t *testing.T) {
 	msg := Message{Text: " foo Bar Baz  "}
-	assert.False(t, msg.MatchStringCase("foo Bar baz"))
-	assert.True(t, msg.MatchStringCase("foo Bar Baz"))
-	assert.True(t, msg.MatchStringCase("  foo Bar Baz  "))
+	require.False(t, msg.MatchStringCase("foo Bar baz"))
+	require.True(t, msg.MatchStringCase("foo Bar Baz"))
+	require.True(t, msg.MatchStringCase("  foo Bar Baz  "))
 }
 
 func TestMessageMatchRegex(t *testing.T) {
@@ -26,7 +26,7 @@ func TestMessageMatchRegex(t *testing.T) {
 	r := regexp.MustCompile(`foo( Ba[rz])+`)
 	r2 := regexp.MustCompile(`foo( ba[rz])+`)
 	r3 := regexp.MustCompile(` foo( Ba[rz])+`)
-	assert.True(t, msg.MatchRegex(r))
-	assert.False(t, msg.MatchRegex(r2))
-	assert.False(t, msg.MatchRegex(r3))
+	require.True(t, msg.MatchRegex(r))
+	require.False(t, msg.MatchRegex(r2))
+	require.False(t, msg.MatchRegex(r3))
 }
