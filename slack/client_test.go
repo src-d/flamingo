@@ -283,11 +283,85 @@ func TestWrap(t *testing.T) {
 }
 
 func TestBroadcast(t *testing.T) {
-	//TODO:  Broadcast(msg interface{}, cond flamingo.Condition) (uint64, uint64, uint64, error) {
-	//TODO: restrictiveBotId -> 0, 0, 0, nil
-	//TODO: restrictiveChannelId -> n, 0, 0, nil
-	//TODO: normal conds -> n, m, 0, nil
-	//TODO: strangeMessage -> 0, 0, m, err
+	require := require.New(t)
+	mock := newSlackRTMMock()
+
+	bot1 := &botClient{
+		id:  "bot1",
+		rtm: mock,
+		conversations: map[string]*botConversation{
+			"conv1-1": &botConversation{
+				rtm:     mock,
+				channel: flamingo.Channel{ID: "1"},
+			},
+			"conv1-2": &botConversation{
+				rtm:     mock,
+				channel: flamingo.Channel{ID: "2"},
+			},
+		},
+	}
+	bot2 := &botClient{
+		id:  "bot2",
+		rtm: mock,
+		conversations: map[string]*botConversation{
+			"conv2-1": &botConversation{
+				rtm:     mock,
+				channel: flamingo.Channel{ID: "3"},
+			},
+			"conv2-2": &botConversation{
+				rtm:     mock,
+				channel: flamingo.Channel{ID: "4"},
+			},
+		},
+	}
+	bot3 := &botClient{
+		id:  "bot3",
+		rtm: mock,
+		conversations: map[string]*botConversation{
+			"conv3-1": &botConversation{
+				rtm:     mock,
+				channel: flamingo.Channel{ID: "5"},
+			},
+			"conv3-2": &botConversation{
+				rtm:     mock,
+				channel: flamingo.Channel{ID: "6"},
+			},
+		},
+	}
+	cli := &slackClient{
+		bots: map[string]clientBot{
+			"bot1": bot1,
+			"bot2": bot2,
+			"bot3": bot3,
+		},
+	}
+
+	filter := func(bot string, channel flamingo.Channel) bool {
+		return bot != "bot1" && channel.ID != "3"
+	}
+	bots, convs, errors, err := cli.Broadcast(flamingo.NewOutgoingMessage("foo"), filter)
+	require.Nil(err)
+	require.Equal(uint64(0), errors)
+	require.Equal(uint64(2), bots)
+	require.Equal(uint64(3), convs)
+	require.Equal(int(convs), len(mock.msgs))
+}
+
+func TestSend(t *testing.T) {
+	require := require.New(t)
+	mock := newapiMock(nil)
+	bot := &bot{
+		id:  "bar",
+		api: mock,
+		channel: flamingo.Channel{
+			ID: "foo",
+		},
+	}
+
+	require.Nil(send(bot, flamingo.NewOutgoingMessage("foo")))
+	require.Nil(send(bot, flamingo.Image{URL: "foo"}))
+	require.Nil(send(bot, flamingo.Form{Text: "foo"}))
+	require.Equal(len(mock.msgs), 3)
 }
 
 func newClient(token string, options ClientOptions) *slackClient {

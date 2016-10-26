@@ -77,3 +77,8 @@ func TestDayTimeSchedule(t *testing.T) {
 		require.Equal(t, 0, nextTime.Second())
 	}
 }
+
+func TestDayTimeScheduleNoDays(t *testing.T) {
+	s := NewDayTimeSchedule(nil, 15, 0, 0)
+	require.Equal(t, time.Time{}, s.Next(time.Now()))
+}
