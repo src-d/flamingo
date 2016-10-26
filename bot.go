@@ -1,7 +1,5 @@
 package flamingo
 
-import "fmt"
-
 // AnswerChecker is a function that will determine if the provided
 // answer is correct analysing the answer Message. If the function
 // returns nil it is assumed the answer is valid, otherwise it is
@@ -83,4 +81,6 @@ type Bot interface {
 }
 
 // Sendable is the interface that must implements structs that are being sent by a Bot
-type Sendable fmt.Stringer
+type Sendable interface {
+	isSendable()
+}

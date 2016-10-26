@@ -2,7 +2,6 @@ package slack
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"net/http"
 	"strings"
@@ -419,32 +418,37 @@ func (c *slackClient) loadFromStorage() error {
 // Broadcast sends message, and returns the number of
 // processed bots, conversations, errors and error occurred
 func (c *slackClient) Broadcast(msg flamingo.Sendable, isValid flamingo.CanBeBroadcasted) (
-	clientBotsCount uint64, conversationsCount uint64, errorsFound uint64, err error,
+	clientBotsCount uint64,
+	conversationsCount uint64,
+	totalErrorsFound uint64,
+	err error,
 ) {
-	var convs, errors uint64
 	for _, clientBot := range c.bots {
-		convs, errors = broadCastTo(clientBot.(*botClient), msg, isValid)
-		errorsFound += errors
+		convs, errors := broadCastTo(clientBot.(*botClient), msg, isValid)
+		totalErrorsFound += errors
 		conversationsCount += convs
 		if convs > 0 {
 			clientBotsCount++
 		}
 	}
 
-	if errorsFound > 0 {
-		err = fmt.Errorf("%d messages could not be delivered", errorsFound)
+	if totalErrorsFound == conversationsCount {
+		err = flamingo.NewErrorNoMessageSent(totalErrorsFound)
+	} else if totalErrorsFound > 0 {
+		err = flamingo.NewErrorSomeMessagesFailed(totalErrorsFound)
 	}
 
 	return
 }
 
 func broadCastTo(botClient *botClient, msg flamingo.Sendable, isValid flamingo.CanBeBroadcasted) (
-	sentCount uint64, errorsFound uint64,
+	conversationsCount uint64,
+	errorsFound uint64,
 ) {
 	for _, conversation := range botClient.conversations {
 		if isValid(botClient.id, conversation.channel, msg) {
 			err := send(conversation.createBot(), msg)
-			sentCount++
+			conversationsCount++
 			if err != nil {
 				errorsFound++
 			}
@@ -464,8 +468,9 @@ func send(bot flamingo.Bot, msg flamingo.Sendable) error {
 	case flamingo.Image:
 		_, err = bot.Image(msg.(flamingo.Image))
 	default:
-		return fmt.Errorf("Message tried to send is not allowed for broadcasting")
+		return flamingo.NewErrorNotValidMessage()
 	}
+
 	return err
 }
 

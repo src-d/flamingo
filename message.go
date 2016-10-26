@@ -17,10 +17,7 @@ type OutgoingMessage struct {
 	Sender *MessageSender
 }
 
-// String returns the string version
-func (o OutgoingMessage) String() string {
-	return o.Text
-}
+func (OutgoingMessage) isSendable() {}
 
 // NewOutgoingMessage creates a simple OutgoingMessage with just text.
 func NewOutgoingMessage(text string) OutgoingMessage {

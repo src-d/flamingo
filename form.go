@@ -23,10 +23,7 @@ type Form struct {
 	Fields []FieldGroup
 }
 
-// String returns the string version
-func (f Form) String() string {
-	return f.Text
-}
+func (Form) isSendable() {}
 
 // Field is an element of a FieldGroup.
 type Field interface {
@@ -209,10 +206,7 @@ type Image struct {
 	ThumbnailURL string
 }
 
-// String returns the string version
-func (f Image) String() string {
-	return f.Text
-}
+func (Image) isSendable() {}
 
 func (f Image) isField() {}
 
