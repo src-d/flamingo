@@ -415,6 +415,65 @@ func (c *slackClient) loadFromStorage() error {
 	return nil
 }
 
+// Broadcast sends message, and returns the number of
+// processed bots, conversations, errors and error occurred
+func (c *slackClient) Broadcast(msg flamingo.Sendable, isValid flamingo.CanBeBroadcasted) (
+	clientBotsCount uint64,
+	conversationsCount uint64,
+	totalErrorsFound uint64,
+	err error,
+) {
+	for _, clientBot := range c.bots {
+		convs, errors := broadCastTo(clientBot.(*botClient), msg, isValid)
+		totalErrorsFound += errors
+		conversationsCount += convs
+		if convs > 0 {
+			clientBotsCount++
+		}
+	}
+
+	if totalErrorsFound == conversationsCount {
+		err = flamingo.NewErrorNoMessageSent(totalErrorsFound)
+	} else if totalErrorsFound > 0 {
+		err = flamingo.NewErrorSomeMessagesFailed(totalErrorsFound)
+	}
+
+	return
+}
+
+func broadCastTo(botClient *botClient, msg flamingo.Sendable, isValid flamingo.CanBeBroadcasted) (
+	conversationsCount uint64,
+	errorsFound uint64,
+) {
+	for _, conversation := range botClient.conversations {
+		if isValid(botClient.id, conversation.channel, msg) {
+			err := send(conversation.createBot(), msg)
+			conversationsCount++
+			if err != nil {
+				errorsFound++
+			}
+		}
+	}
+
+	return
+}
+
+func send(bot flamingo.Bot, msg flamingo.Sendable) error {
+	var err error
+	switch msg.(type) {
+	case flamingo.OutgoingMessage:
+		_, err = bot.Say(msg.(flamingo.OutgoingMessage))
+	case flamingo.Form:
+		_, err = bot.Form(msg.(flamingo.Form))
+	case flamingo.Image:
+		_, err = bot.Image(msg.(flamingo.Image))
+	default:
+		return flamingo.NewErrorNotValidMessage()
+	}
+
+	return err
+}
+
 func (c *slackClient) Run() error {
 	log15.Info("Starting flamingo slack client")
 	if c.storage != nil {

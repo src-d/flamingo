@@ -79,3 +79,8 @@ type Bot interface {
 	// action queue and it will be processed asynchronously.
 	InvokeAction(id string, user User, action UserAction)
 }
+
+// Sendable is the interface that must implements structs that are being sent by a Bot
+type Sendable interface {
+	isSendable()
+}

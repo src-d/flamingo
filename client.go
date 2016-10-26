@@ -7,6 +7,8 @@ import "io"
 // more than one platform you will have to start several clients
 // for different platforms.
 type Client interface {
+	Broadcaster
+
 	// SetLogOutput will write the logs to the given io.Writer.
 	SetLogOutput(io.Writer)
 
@@ -48,6 +50,14 @@ type Client interface {
 	Stop() error
 }
 
+// Broadcaster defines a client that can send messages to the registered conversations
+// following certain condition
+type Broadcaster interface {
+	// Broadcast sends message, and returns the number of
+	// processed bots, conversations and the error occurred
+	Broadcast(Sendable, CanBeBroadcasted) (bots uint64, convs uint64, errCount uint64, err error)
+}
+
 // ErrorHandler will handle an error after a panic. The parameter it receives is the
 // result of recover()
 type ErrorHandler func(interface{})
@@ -69,3 +79,6 @@ const (
 // Job is a function that will execute like a cron job after a
 // certain amount of time to perform some kind of task.
 type Job func(Bot, Channel) error
+
+// BroadcastFilter returns true if message can be broadcasted to bot and Channel
+type CanBeBroadcasted func(botID string, channel Channel, msg Sendable) bool

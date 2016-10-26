@@ -17,6 +17,8 @@ type OutgoingMessage struct {
 	Sender *MessageSender
 }
 
+func (OutgoingMessage) isSendable() {}
+
 // NewOutgoingMessage creates a simple OutgoingMessage with just text.
 func NewOutgoingMessage(text string) OutgoingMessage {
 	return OutgoingMessage{Text: text}

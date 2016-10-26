@@ -23,6 +23,8 @@ type Form struct {
 	Fields []FieldGroup
 }
 
+func (Form) isSendable() {}
+
 // Field is an element of a FieldGroup.
 type Field interface {
 	isField()
@@ -203,6 +205,8 @@ type Image struct {
 	// ThumbnailURL is the URL of the thumbnail to be displayed.
 	ThumbnailURL string
 }
+
+func (Image) isSendable() {}
 
 func (f Image) isField() {}
 
