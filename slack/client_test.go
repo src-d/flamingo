@@ -12,7 +12,6 @@ import (
 	"github.com/mvader/slack"
 	"github.com/src-d/flamingo"
 	"github.com/src-d/flamingo/storage"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -41,38 +40,38 @@ func (c *helloCtrl) HandleIntro(b flamingo.Bot, channel flamingo.Channel) error 
 }
 
 func TestControllerFor(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	cli := newClient("", ClientOptions{})
 	var ctrl flamingo.Controller = &helloCtrl{}
 	cli.AddController(ctrl)
 
 	result, ok := cli.ControllerFor(flamingo.Message{Text: "hello"})
-	assert.True(ok)
-	assert.Equal(reflect.ValueOf(ctrl.Handle).Pointer(), reflect.ValueOf(result).Pointer())
+	require.True(ok)
+	require.Equal(reflect.ValueOf(ctrl.Handle).Pointer(), reflect.ValueOf(result).Pointer())
 
 	result, ok = cli.ControllerFor(flamingo.Message{Text: "goodbye"})
-	assert.False(ok)
-	assert.Nil(result)
+	require.False(ok)
+	require.Nil(result)
 }
 
 func TestActionHandler(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	cli := newClient("", ClientOptions{})
 	var handler flamingo.ActionHandler = func(b flamingo.Bot, a flamingo.Action) {
 	}
 	cli.AddActionHandler("foo", handler)
 
 	result, ok := cli.ActionHandler("foo")
-	assert.True(ok)
-	assert.Equal(reflect.ValueOf(handler).Pointer(), reflect.ValueOf(result).Pointer())
+	require.True(ok)
+	require.Equal(reflect.ValueOf(handler).Pointer(), reflect.ValueOf(result).Pointer())
 
 	result, ok = cli.ActionHandler("bar")
-	assert.False(ok)
-	assert.Nil(result)
+	require.False(ok)
+	require.Nil(result)
 }
 
 func TestRunAndStopWebhook(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	cli := newClient("xAB3yVzGS4BQ3O9FACTa8Ho4", ClientOptions{
 		Webhook: WebhookOptions{Addr: "127.0.0.1:8989"},
 	})
@@ -82,8 +81,8 @@ func TestRunAndStopWebhook(t *testing.T) {
 	data := url.Values{}
 	data.Set("payload", testCallback)
 	resp, err := http.Post("http://127.0.0.1:8989", "application/x-www-form-urlencoded", bytes.NewBufferString(data.Encode()))
-	assert.Nil(err)
-	assert.Equal(resp.StatusCode, http.StatusOK)
+	require.Nil(err)
+	require.Equal(resp.StatusCode, http.StatusOK)
 
 	cli.shutdownWebhook <- struct{}{}
 	<-time.After(50 * time.Millisecond)
@@ -92,7 +91,7 @@ func TestRunAndStopWebhook(t *testing.T) {
 		Timeout: 50 * time.Millisecond,
 	}
 	resp, err = client.Post("http://127.0.0.1:8989", "application/x-www-form-urlencoded", bytes.NewBufferString(data.Encode()))
-	assert.NotNil(err)
+	require.NotNil(err)
 }
 
 type clientBotMock struct {
@@ -131,7 +130,7 @@ func (b *clientBotMock) addConversation(id string) error {
 }
 
 func TestRunAndStop(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	cli := newClient("xAB3yVzGS4BQ3O9FACTa8Ho4", ClientOptions{
 		Webhook: WebhookOptions{Addr: "127.0.0.1:8787", Enabled: true},
 		Debug:   true,
@@ -152,31 +151,31 @@ func TestRunAndStop(t *testing.T) {
 	data := url.Values{}
 	data.Set("payload", testCallback)
 	resp, err := http.Post("http://127.0.0.1:8787", "application/x-www-form-urlencoded", bytes.NewBufferString(data.Encode()))
-	assert.Nil(err)
-	assert.Equal(resp.StatusCode, http.StatusOK)
+	require.Nil(err)
+	require.Equal(resp.StatusCode, http.StatusOK)
 
-	assert.Nil(cli.Stop())
+	require.Nil(cli.Stop())
 	<-time.After(50 * time.Millisecond)
 
 	select {
 	case <-stopped:
 	case <-time.After(50 * time.Millisecond):
-		assert.FailNow("did not stop")
+		require.FailNow("did not stop")
 	}
-	assert.True(bot.stopped)
-	assert.Equal(1, len(bot.actions))
-	assert.Equal("test_callback", bot.actions[0].CallbackID)
-	assert.Equal("channel", bot.channels[0])
+	require.True(bot.stopped)
+	require.Equal(1, len(bot.actions))
+	require.Equal("test_callback", bot.actions[0].CallbackID)
+	require.Equal("channel", bot.channels[0])
 
-	assert.True(bot2.stopped)
-	assert.Equal(0, len(bot2.actions))
+	require.True(bot2.stopped)
+	require.Equal(0, len(bot2.actions))
 }
 
 func TestSetIntroHandler(t *testing.T) {
 	cli := newClient("", ClientOptions{})
 	ctrl := &helloCtrl{}
 	cli.SetIntroHandler(ctrl)
-	assert.Equal(t, reflect.ValueOf(ctrl).Pointer(), reflect.ValueOf(cli.introHandler).Pointer())
+	require.Equal(t, reflect.ValueOf(ctrl).Pointer(), reflect.ValueOf(cli.introHandler).Pointer())
 }
 
 func TestHandleIntro(t *testing.T) {
@@ -185,13 +184,13 @@ func TestHandleIntro(t *testing.T) {
 	cli.HandleIntro(nil, flamingo.Channel{})
 	cli.SetIntroHandler(ctrl)
 	cli.HandleIntro(nil, flamingo.Channel{})
-	assert.Equal(t, 1, ctrl.calledIntro)
+	require.Equal(t, 1, ctrl.calledIntro)
 }
 
 func TestStartScheduledJobsAndStop(t *testing.T) {
 	cli := newClient("", ClientOptions{})
 	cli.AddScheduledJob(flamingo.NewIntervalSchedule(1*time.Second), func(_ flamingo.Bot, _ flamingo.Channel) error {
-		assert.FailNow(t, "scheduled job was run")
+		require.FailNow(t, "scheduled job was run")
 		return nil
 	})
 
@@ -214,7 +213,7 @@ func TestScheduledJobs(t *testing.T) {
 	<-time.After(90 * time.Millisecond)
 	mock.RLock()
 	defer mock.RUnlock()
-	assert.Equal(t, 1, mock.handledJobs)
+	require.Equal(t, 1, mock.handledJobs)
 }
 
 func TestLoadFromStorage(t *testing.T) {
@@ -223,12 +222,12 @@ func TestLoadFromStorage(t *testing.T) {
 	storage.StoreBot(flamingo.StoredBot{ID: "1", Token: "foo"})
 	storage.StoreConversation(flamingo.StoredConversation{ID: "2", BotID: "1"})
 	cli.SetStorage(storage)
-	assert.Nil(t, cli.loadFromStorage())
+	require.Nil(t, cli.loadFromStorage())
 	_, ok := cli.bots["1"]
-	assert.True(t, ok)
+	require.True(t, ok)
 
 	_, ok = cli.bots["1"].(*botClient).conversations["2"]
-	assert.True(t, ok)
+	require.True(t, ok)
 }
 
 func TestSave(t *testing.T) {
@@ -239,13 +238,13 @@ func TestSave(t *testing.T) {
 	cli.bots["1"].addConversation("2")
 
 	ok, _ := storage.BotExists(flamingo.StoredBot{ID: "1"})
-	assert.True(t, ok)
+	require.True(t, ok)
 	ok, _ = storage.ConversationExists(flamingo.StoredConversation{ID: "2"})
-	assert.True(t, ok)
+	require.True(t, ok)
 }
 
 func TestAddBotOnlyOnce(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	cli := newClient("", ClientOptions{})
 	storage := storage.NewMemory()
 	cli.SetStorage(storage)
@@ -254,8 +253,8 @@ func TestAddBotOnlyOnce(t *testing.T) {
 	cli.AddBot("1", "foo", nil)
 
 	bots, _ := storage.LoadBots()
-	assert.Equal(2, len(bots))
-	assert.Equal(2, len(cli.loadedBots))
+	require.Equal(2, len(bots))
+	require.Equal(2, len(cli.loadedBots))
 }
 
 func TestWrap(t *testing.T) {

@@ -8,7 +8,7 @@ import (
 
 	"github.com/mvader/slack"
 	"github.com/src-d/flamingo"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var existentChannel string = "existentChannel"
@@ -35,7 +35,7 @@ func (m *slackRTMMock) setUser(user *slack.User) {
 }
 
 func TestHandleAction(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 
 	client := newBotClient(
 		"aaaa",
@@ -59,9 +59,9 @@ func TestHandleAction(t *testing.T) {
 
 	select {
 	case action := <-convo.actions:
-		assert.Equal("foo", action.CallbackID)
+		require.Equal("foo", action.CallbackID)
 	case <-time.After(50 * time.Millisecond):
-		assert.FailNow("action was not received by conversation")
+		require.FailNow("action was not received by conversation")
 	}
 
 	client.handleAction("cccc", slack.AttachmentActionCallback{
@@ -70,13 +70,13 @@ func TestHandleAction(t *testing.T) {
 
 	select {
 	case <-convo.actions:
-		assert.FailNow("action should not have been received by conversation")
+		require.FailNow("action should not have been received by conversation")
 	case <-time.After(50 * time.Millisecond):
 	}
 }
 
 func TestHandleActionInitMessage(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	_, helloCont, _, botCli := getSlackMocks()
 	defer botCli.stop()
 
@@ -85,20 +85,20 @@ func TestHandleActionInitMessage(t *testing.T) {
 	})
 	conv := botCli.conversations[existentChannel]
 	<-conv.actions
-	assert.Equal(1, openedConversationsCount(botCli))
-	assert.Equal(0, calledIntroCount(helloCont))
+	require.Equal(1, openedConversationsCount(botCli))
+	require.Equal(0, calledIntroCount(helloCont))
 
 	botCli.handleAction("notExistentChannel2", slack.AttachmentActionCallback{
 		CallbackID: "foo",
 	})
 	conv2 := botCli.conversations["notExistentChannel2"]
 	<-conv2.actions
-	assert.Equal(2, openedConversationsCount(botCli))
-	assert.Equal(1, calledIntroCount(helloCont))
+	require.Equal(2, openedConversationsCount(botCli))
+	require.Equal(1, calledIntroCount(helloCont))
 }
 
 func TestHandleRTMEvent(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := &slackRTMMock{
 		events: make(chan slack.RTMEvent),
 	}
@@ -137,14 +137,14 @@ func TestHandleRTMEvent(t *testing.T) {
 
 	select {
 	case msg := <-convo.messages:
-		assert.Equal("text", msg.Text)
+		require.Equal("text", msg.Text)
 	case <-time.After(100 * time.Millisecond):
-		assert.FailNow("didn't get the message")
+		require.FailNow("didn't get the message")
 	}
 }
 
 func TestHandleRTMEventOpenConvo(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := &slackRTMMock{
 		events: make(chan slack.RTMEvent),
 	}
@@ -176,26 +176,26 @@ func TestHandleRTMEventOpenConvo(t *testing.T) {
 
 	<-time.After(50 * time.Millisecond)
 	client.Lock()
-	assert.Equal(2, len(client.conversations))
+	require.Equal(2, len(client.conversations))
 	client.Unlock()
 }
 
 func TestHandleRTMEventInitMessage(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	rtm, helloCont, _, botCli := getSlackMocks()
 	defer botCli.stop()
 
 	sendRTMMessageEvent(rtm, existentChannel)
-	assert.Equal(1, openedConversationsCount(botCli))
-	assert.Equal(0, calledIntroCount(helloCont))
+	require.Equal(1, openedConversationsCount(botCli))
+	require.Equal(0, calledIntroCount(helloCont))
 
 	sendRTMMessageEvent(rtm, "notExistentChannel")
-	assert.Equal(2, openedConversationsCount(botCli))
-	assert.Equal(1, calledIntroCount(helloCont))
+	require.Equal(2, openedConversationsCount(botCli))
+	require.Equal(1, calledIntroCount(helloCont))
 }
 
 func TestHandleIMCreatedEvent(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := &slackRTMMock{
 		events: make(chan slack.RTMEvent),
 	}
@@ -221,15 +221,15 @@ func TestHandleIMCreatedEvent(t *testing.T) {
 
 	<-time.After(50 * time.Millisecond)
 	client.Lock()
-	assert.Equal(1, len(client.conversations))
+	require.Equal(1, len(client.conversations))
 	client.Unlock()
 	ctrl.Lock()
-	assert.Equal(1, ctrl.calledIntro)
+	require.Equal(1, ctrl.calledIntro)
 	ctrl.Unlock()
 }
 
 func TestHandleGroupJoinedEvent(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	mock := &slackRTMMock{
 		events: make(chan slack.RTMEvent),
 	}
@@ -251,10 +251,10 @@ func TestHandleGroupJoinedEvent(t *testing.T) {
 
 	<-time.After(50 * time.Millisecond)
 	client.Lock()
-	assert.Equal(1, len(client.conversations))
+	require.Equal(1, len(client.conversations))
 	client.Unlock()
 	ctrl.Lock()
-	assert.Equal(1, ctrl.calledIntro)
+	require.Equal(1, ctrl.calledIntro)
 	ctrl.Unlock()
 }
 
@@ -277,7 +277,7 @@ func TestHandleJob(t *testing.T) {
 		return errors.New("foo")
 	})
 
-	assert.Equal(t, int32(4), atomic.LoadInt32(&executed))
+	require.Equal(t, int32(4), atomic.LoadInt32(&executed))
 }
 
 func getSlackMocks() (*slackRTMMock, *helloCtrl, *slackClient, *botClient) {

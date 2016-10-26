@@ -6,18 +6,18 @@ import (
 
 	"github.com/mvader/slack"
 	"github.com/src-d/flamingo"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestBotConversation(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 
 	mock := &slackRTMMock{
 		events: make(chan slack.RTMEvent),
 	}
 	cli := NewClient("", ClientOptions{Debug: true}).(*slackClient)
 	convo, err := newBotConversation("aaaa", "Cbbbb", mock, cli)
-	assert.Nil(err)
+	require.Nil(err)
 	go convo.run()
 	defer convo.stop()
 
@@ -39,6 +39,6 @@ func TestBotConversation(t *testing.T) {
 	}
 
 	<-time.After(100 * time.Millisecond)
-	assert.True(entered)
-	assert.Equal(1, len(ctrl.msgs))
+	require.True(entered)
+	require.Equal(1, len(ctrl.msgs))
 }

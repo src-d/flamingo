@@ -3,21 +3,21 @@ package flamingo
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestPolicies(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	p := IgnorePolicy()
-	assert.False(p.Reply)
+	require.False(p.Reply)
 
 	p = ReplyPolicy("foo")
-	assert.True(p.Reply)
-	assert.Equal("foo", p.Message)
+	require.True(p.Reply)
+	require.Equal("foo", p.Message)
 }
 
 func TestButtonGroup(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 
 	g := NewButtonGroup(
 		"foo",
@@ -26,33 +26,33 @@ func TestButtonGroup(t *testing.T) {
 		NewDangerButton("c", "c"),
 	)
 
-	assert.Equal("foo", g.ID())
-	assert.Equal(3, len(g.Items()))
-	assert.Equal(ButtonGroup, g.Type())
+	require.Equal("foo", g.ID())
+	require.Equal(3, len(g.Items()))
+	require.Equal(ButtonGroup, g.Type())
 }
 
 func TestImage(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 
 	g := Image{}
 
-	assert.Equal("", g.ID())
-	assert.Equal(1, len(g.Items()))
-	assert.Equal(ImageGroup, g.Type())
+	require.Equal("", g.ID())
+	require.Equal(1, len(g.Items()))
+	require.Equal(ImageGroup, g.Type())
 }
 
 func TestText(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 
 	g := Text("fooooo")
 
-	assert.Equal("", g.ID())
-	assert.Equal(1, len(g.Items()))
-	assert.Equal(TextGroup, g.Type())
+	require.Equal("", g.ID())
+	require.Equal(1, len(g.Items()))
+	require.Equal(TextGroup, g.Type())
 }
 
 func TestTextFieldGroup(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 
 	g := NewTextFieldGroup(
 		NewTextField("a", "a"),
@@ -60,11 +60,11 @@ func TestTextFieldGroup(t *testing.T) {
 		NewShortTextField("c", "c"),
 	)
 
-	assert.Equal("", g.ID())
-	assert.Equal(3, len(g.Items()))
-	assert.Equal(TextFieldGroup, g.Type())
+	require.Equal("", g.ID())
+	require.Equal(3, len(g.Items()))
+	require.Equal(TextFieldGroup, g.Type())
 }
 
 func TestNewOutgoingMessage(t *testing.T) {
-	assert.Equal(t, "foo", NewOutgoingMessage("foo").Text)
+	require.Equal(t, "foo", NewOutgoingMessage("foo").Text)
 }

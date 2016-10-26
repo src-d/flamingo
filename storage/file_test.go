@@ -6,70 +6,70 @@ import (
 	"testing"
 
 	"github.com/src-d/flamingo"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestFileStorage(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	storage, err := NewFile("./foo.json")
-	assert.Nil(err)
+	require.Nil(err)
 	RunStorageTest(storage, t)
 
 	storage, err = NewFile("./foo.json")
 	ok, err := storage.BotExists(flamingo.StoredBot{ID: "1"})
-	assert.Nil(err)
-	assert.True(ok)
+	require.Nil(err)
+	require.True(ok)
 
 	ok, err = storage.ConversationExists(flamingo.StoredConversation{
 		ID: "2", BotID: "1",
 	})
-	assert.Nil(err)
-	assert.True(ok)
+	require.Nil(err)
+	require.True(ok)
 
 	bots, err := storage.LoadBots()
-	assert.Nil(err)
-	assert.Equal(2, len(bots))
+	require.Nil(err)
+	require.Equal(2, len(bots))
 
 	convs, err := storage.LoadConversations(flamingo.StoredBot{ID: "1"})
-	assert.Nil(err)
-	assert.Equal(2, len(convs))
+	require.Nil(err)
+	require.Equal(2, len(convs))
 
 	convs, err = storage.LoadConversations(flamingo.StoredBot{ID: "2"})
-	assert.Nil(err)
-	assert.Equal(0, len(convs))
+	require.Nil(err)
+	require.Equal(0, len(convs))
 
-	assert.Nil(os.Remove("./foo.json"))
+	require.Nil(os.Remove("./foo.json"))
 }
 
 func TestFileStorageNewFileOpenFail(t *testing.T) {
 	_, err := NewFile("/")
-	assert.NotNil(t, err)
+	require.NotNil(t, err)
 }
 
 func TestFileStorageNewFileUnmarshalFail(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	f, err := ioutil.TempFile("", "unmarshal_error")
-	assert.Nil(err)
+	require.Nil(err)
 	_, err = f.WriteString("some_garbage")
-	assert.Nil(err)
+	require.Nil(err)
 	_, err = NewFile(f.Name())
-	assert.NotNil(err)
+	require.NotNil(err)
 
-	assert.Nil(os.Remove(f.Name()))
+	require.Nil(os.Remove(f.Name()))
 }
 
 func TestFileStorageSaveMarshalFail(t *testing.T) {
-	assert := assert.New(t)
+	require := require.New(t)
 	storage, err := NewFile("./foo.json")
-	assert.Nil(err)
+	require.Nil(err)
 
 	bot := flamingo.StoredBot{Extra: func() {}}
-	assert.NotNil(storage.StoreBot(bot))
+	require.NotNil(storage.StoreBot(bot))
 }
 
 func TestFileStorageSaveRemoveFileFail(t *testing.T) {
 	storage := fileStorage{file: "/etc/passwd", data: newBotStorage()}
 
 	bot := flamingo.StoredBot{ID: "1"}
-	assert.NotNil(t, storage.StoreBot(bot))
+	require.NotNil(t, storage.StoreBot(bot))
 }
