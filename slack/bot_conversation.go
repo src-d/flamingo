@@ -77,7 +77,11 @@ func (c *botConversation) run() {
 		case <-c.shutdown:
 			c.closed <- struct{}{}
 			return
-		case msg := <-c.messages:
+		case msg, ok := <-c.messages:
+			if !ok {
+				continue
+			}
+
 			if c.isWorking() {
 				go c.requeueMessage(msg)
 				<-time.After(50 * time.Millisecond)
@@ -87,6 +91,10 @@ func (c *botConversation) run() {
 			c.handleMessage(msg)
 
 		case action, ok := <-c.actions:
+			if !ok {
+				continue
+			}
+
 			if c.isWorking() {
 				go c.requeueAction(action)
 				<-time.After(50 * time.Millisecond)
