@@ -70,7 +70,109 @@ func newBotConversation(bot, channelID string, rtm slackRTM, delegate handlerDel
 }
 
 func (c *botConversation) run() {
-	defer func() {
+	defer c.recoverAndRestart()
+
+	for {
+		select {
+		case <-c.shutdown:
+			c.closed <- struct{}{}
+			return
+		case msg := <-c.messages:
+			if c.isWorking() {
+				go c.requeueMessage(msg)
+				<-time.After(50 * time.Millisecond)
+				continue
+			}
+
+			c.handleMessage(msg)
+
+		case action, ok := <-c.actions:
+			if c.isWorking() {
+				go c.requeueAction(action)
+				<-time.After(50 * time.Millisecond)
+				continue
+			}
+
+			c.handleAction(action)
+		case <-time.After(50 * time.Millisecond):
+		}
+	}
+}
+
+func (c *botConversation) requeueMessage(msg *slack.MessageEvent) {
+	c.messages <- msg
+}
+
+func (c *botConversation) requeueAction(action *slack.AttachmentActionCallback) {
+	c.actions <- action
+}
+
+func (c *botConversation) isWorking() bool {
+	c.Lock()
+	defer c.Unlock()
+	return c.working
+}
+
+func (c *botConversation) handleMessage(msg *slack.MessageEvent) {
+	message, err := c.convertMessage(msg)
+	if err != nil {
+		log15.Error("error converting message", "err", err.Error())
+		continue
+	}
+
+	handler, ok := c.delegate.ControllerFor(message)
+	if !ok {
+		log15.Warn("no controller for message", "text", message.Text)
+		continue
+	}
+
+	go func() {
+		defer c.recoverWithLog("panic caught handling msg")
+
+		c.setWorking(true)
+		defer c.setWorking(false)
+		if err := handler(c.createBot(), message); err != nil {
+			log15.Error("error handling message", "error", err.Error())
+		}
+	}()
+}
+
+func (c *botConversation) handleAction(action *slack.AttachmentActionCallback) {
+	handler, ok := c.delegate.ActionHandler(action.CallbackID)
+	if !ok {
+		log15.Warn("no handler for callback", "id", action.CallbackID)
+		continue
+	}
+
+	act, err := convertAction(action, c.rtm)
+	if err != nil {
+		log15.Error("error converting action", "err", err.Error())
+		continue
+	}
+
+	go func() {
+		defer c.recoverWithLog("panic caught handling action")
+
+		c.setWorking(true)
+		defer c.setWorking(false)
+		handler(c.createBot(), act)
+	}()
+}
+
+func (c *botConversation) recoverWithLog(msg string) {
+	if r := recover(); r != nil {
+		if err, ok := r.(error); ok {
+			log15.Error(msg, "err", err.Error())
+		}
+
+		if handler := c.delegate.ErrorHandler(); handler != nil {
+			handler(r)
+		}
+	}
+}
+
+func (c *botConversation) recoverAndRestart() {
+	func() {
 		if r := recover(); r != nil {
 			if err, ok := r.(error); ok {
 				log15.Error("panic caught on bot conversation", "err", err.Error())
@@ -84,97 +186,6 @@ func (c *botConversation) run() {
 			go c.run()
 		}
 	}()
-
-	for {
-		select {
-		case <-c.shutdown:
-			c.closed <- struct{}{}
-			return
-		case msg := <-c.messages:
-			c.Lock()
-			working := c.working
-			c.Unlock()
-			if working {
-				go func() {
-					c.messages <- msg
-				}()
-				<-time.After(50 * time.Millisecond)
-				continue
-			}
-
-			message, err := c.convertMessage(msg)
-			if err != nil {
-				log15.Error("error converting message", "err", err.Error())
-				continue
-			}
-
-			handler, ok := c.delegate.ControllerFor(message)
-			if !ok {
-				log15.Warn("no controller for message", "text", message.Text)
-				continue
-			}
-
-			go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						if err, ok := r.(error); ok {
-							log15.Error("panic caught handling msg", "err", err.Error())
-						}
-
-						if handler := c.delegate.ErrorHandler(); handler != nil {
-							handler(r)
-						}
-					}
-				}()
-
-				c.setWorking(true)
-				defer c.setWorking(false)
-				if err := handler(c.createBot(), message); err != nil {
-					log15.Error("error handling message", "error", err.Error())
-				}
-			}()
-
-		case action, ok := <-c.actions:
-			if c.working {
-				go func() {
-					c.actions <- action
-				}()
-				<-time.After(50 * time.Millisecond)
-				continue
-			}
-
-			handler, ok := c.delegate.ActionHandler(action.CallbackID)
-			if !ok {
-				log15.Warn("no handler for callback", "id", action.CallbackID)
-				continue
-			}
-
-			act, err := convertAction(action, c.rtm)
-			if err != nil {
-				log15.Error("error converting action", "err", err.Error())
-				continue
-			}
-
-			go func() {
-				defer func() {
-					if r := recover(); r != nil {
-						if err, ok := r.(error); ok {
-							log15.Error("panic caught handling action", "err", err.Error())
-						}
-
-						if handler := c.delegate.ErrorHandler(); handler != nil {
-							handler(r)
-						}
-					}
-				}()
-
-				c.setWorking(true)
-				defer c.setWorking(false)
-				handler(c.createBot(), act)
-			}()
-		case <-time.After(50 * time.Millisecond):
-		}
-	}
 }
 
 func (c *botConversation) setWorking(working bool) {

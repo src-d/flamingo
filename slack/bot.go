@@ -257,7 +257,7 @@ func (b *bot) InvokeAction(id string, user flamingo.User, action flamingo.UserAc
 
 	b.actions <- slack.AttachmentActionCallback{
 		Actions: []slack.AttachmentAction{
-			slack.AttachmentAction{
+			{
 				Name:  action.Name,
 				Value: action.Value,
 			},

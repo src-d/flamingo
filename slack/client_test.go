@@ -289,11 +289,11 @@ func TestBroadcast(t *testing.T) {
 		id:  "bot1",
 		rtm: mock,
 		conversations: map[string]*botConversation{
-			"conv1-1": &botConversation{
+			"conv1-1": {
 				rtm:     mock,
 				channel: flamingo.Channel{ID: "1"},
 			},
-			"conv1-2": &botConversation{
+			"conv1-2": {
 				rtm:     mock,
 				channel: flamingo.Channel{ID: "2"},
 			},
@@ -303,11 +303,11 @@ func TestBroadcast(t *testing.T) {
 		id:  "bot2",
 		rtm: mock,
 		conversations: map[string]*botConversation{
-			"conv2-1": &botConversation{
+			"conv2-1": {
 				rtm:     mock,
 				channel: flamingo.Channel{ID: "3"},
 			},
-			"conv2-2": &botConversation{
+			"conv2-2": {
 				rtm:     mock,
 				channel: flamingo.Channel{ID: "4"},
 			},
@@ -317,11 +317,11 @@ func TestBroadcast(t *testing.T) {
 		id:  "bot3",
 		rtm: mock,
 		conversations: map[string]*botConversation{
-			"conv3-1": &botConversation{
+			"conv3-1": {
 				rtm:     mock,
 				channel: flamingo.Channel{ID: "5"},
 			},
-			"conv3-2": &botConversation{
+			"conv3-2": {
 				rtm:     mock,
 				channel: flamingo.Channel{ID: "6"},
 			},

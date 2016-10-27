@@ -200,7 +200,7 @@ func TestAsk(t *testing.T) {
 	ch <- &slack.MessageEvent{
 		Msg: slack.Msg{
 			Text:        "fine, thanks",
-			Attachments: []slack.Attachment{slack.Attachment{}},
+			Attachments: []slack.Attachment{{}},
 		},
 	}
 
@@ -372,7 +372,7 @@ func TestWaitForActionReplyPolicy(t *testing.T) {
 		actions <- slack.AttachmentActionCallback{
 			CallbackID: "foo",
 			Actions: []slack.AttachmentAction{
-				slack.AttachmentAction{
+				{
 					Name:  "foo",
 					Value: "foo-1",
 				},
