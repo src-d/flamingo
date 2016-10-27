@@ -111,7 +111,7 @@ func (c *botConversation) requeueMessage(msg *slack.MessageEvent) {
 	c.messages <- msg
 }
 
-func (c *botConversation) requeueAction(action *slack.AttachmentActionCallback) {
+func (c *botConversation) requeueAction(action slack.AttachmentActionCallback) {
 	c.actions <- action
 }
 
@@ -125,13 +125,13 @@ func (c *botConversation) handleMessage(msg *slack.MessageEvent) {
 	message, err := c.convertMessage(msg)
 	if err != nil {
 		log15.Error("error converting message", "err", err.Error())
-		continue
+		return
 	}
 
 	handler, ok := c.delegate.ControllerFor(message)
 	if !ok {
 		log15.Warn("no controller for message", "text", message.Text)
-		continue
+		return
 	}
 
 	go func() {
@@ -145,17 +145,17 @@ func (c *botConversation) handleMessage(msg *slack.MessageEvent) {
 	}()
 }
 
-func (c *botConversation) handleAction(action *slack.AttachmentActionCallback) {
+func (c *botConversation) handleAction(action slack.AttachmentActionCallback) {
 	handler, ok := c.delegate.ActionHandler(action.CallbackID)
 	if !ok {
 		log15.Warn("no handler for callback", "id", action.CallbackID)
-		continue
+		return
 	}
 
 	act, err := convertAction(action, c.rtm)
 	if err != nil {
 		log15.Error("error converting action", "err", err.Error())
-		continue
+		return
 	}
 
 	go func() {
