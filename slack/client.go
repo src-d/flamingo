@@ -1,8 +1,10 @@
 package slack
 
 import (
+	"crypto/tls"
 	"errors"
 	"io"
+	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -10,6 +12,7 @@ import (
 
 	"gopkg.in/inconshreveable/log15.v2"
 
+	"github.com/dkumor/acmewrapper"
 	"github.com/mvader/slack"
 	"github.com/src-d/flamingo"
 	"github.com/src-d/flamingo/storage"
@@ -27,6 +30,10 @@ type ClientOptions struct {
 type WebhookOptions struct {
 	// Enabled will start the webhook endpoint if true.
 	Enabled bool
+	// UseLetsEncrypt will setup for you a letsencrypt certificate if true.
+	UseLetsEncrypt bool
+	// Domain name of the webhook service, used in the letsencrypt certificate process.
+	Domain string
 	// VerificationToken is the token used to check incoming actions come from slack.
 	VerificationToken string
 	// Addr is the address on which the webhook will be run. Required
@@ -34,11 +41,21 @@ type WebhookOptions struct {
 	Addr string
 	// UseHTTPS will use HTTPS instead of HTTP to serve the webhook.
 	// Note that using HTTPS is required by slack for receiving webhooks.
+	// If UseLetsEncrypt is true, the value of this property will be ignored.
 	UseHTTPS bool
 	// CertFile is the path to the SSL certificate. If UseHTTPS is true it is required.
 	CertFile string
 	// KeyFile is the path to the SSL key. If UseHTTPS is true it is required.
 	KeyFile string
+	// RegistrationFile is the file to read/write registration info to. The ACME protocol requires remembering some details
+	// about a registration. Therefore, the file is saved at the given location.
+	// If not given, and PrivateKeyFile is given, then gives an error - if you're saving your private key,
+	// you need to save your user registration.
+	RegistrationFile string
+	// PrivateKeyFile is the file to read/write the private key from/to. If this is not empty, and the file does not exist,
+	// then the user is assumed not to be registered, and the file is created. if this is empty, then
+	// a new private key is generated and used for all queries. The private key is lost on stopping the program.
+	PrivateKeyFile string
 }
 
 type clientBot interface {
@@ -319,17 +336,56 @@ func (c *slackClient) runWebhook() error {
 		return errors.New("webhook verification token is empty")
 	}
 
-	srv := http.Server{
+	if (c.options.Webhook.UseHTTPS || c.options.Webhook.UseLetsEncrypt) &&
+		(c.options.Webhook.CertFile == "" || c.options.Webhook.KeyFile == "") {
+		return errors.New("cert and key files need to be provided if HTTPS or letsencrypt are enabled")
+	}
+
+	var (
+		tlsconfig *tls.Config
+		listener  net.Listener
+	)
+
+	if c.options.Webhook.UseHTTPS || c.options.Webhook.UseLetsEncrypt {
+		w, err := acmewrapper.New(acmewrapper.Config{
+			Domains:          []string{c.options.Webhook.Domain},
+			Address:          c.options.Webhook.Addr,
+			TLSCertFile:      c.options.Webhook.CertFile,
+			TLSKeyFile:       c.options.Webhook.KeyFile,
+			RegistrationFile: c.options.Webhook.RegistrationFile,
+			PrivateKeyFile:   c.options.Webhook.PrivateKeyFile,
+			AcmeDisabled:     !c.options.Webhook.UseLetsEncrypt,
+			TOSCallback:      acmewrapper.TOSAgree,
+		})
+		if err != nil {
+			return err
+		}
+
+		tlsconfig = w.TLSConfig()
+		listener, err = tls.Listen("tcp", c.options.Webhook.Addr, tlsconfig)
+		if err != nil {
+			return err
+		}
+	} else {
+		var err error
+		listener, err = net.Listen("tcp", c.options.Webhook.Addr)
+		if err != nil {
+			return err
+		}
+	}
+
+	go func() {
+		<-c.shutdownWebhook
+		listener.Close()
+	}()
+
+	return (&http.Server{
 		ReadTimeout:  1 * time.Second,
 		WriteTimeout: 3 * time.Second,
 		Addr:         c.options.Webhook.Addr,
 		Handler:      c.webhook,
-	}
-
-	if c.options.Webhook.UseHTTPS {
-		return srv.ListenAndServeTLS(c.options.Webhook.CertFile, c.options.Webhook.KeyFile)
-	}
-	return srv.ListenAndServe()
+		TLSConfig:    tlsconfig,
+	}).Serve(listener)
 }
 
 func (c *slackClient) runScheduledJobs() {
