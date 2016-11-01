@@ -1,6 +1,7 @@
 package flamingo
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -72,6 +73,56 @@ func TestDayTimeSchedule(t *testing.T) {
 	for _, c := range cases {
 		nextTime := s.Next(c.now)
 		require.Equal(t, c.nextDay, nextTime.Weekday())
+		require.Equal(t, 15, nextTime.Hour())
+		require.Equal(t, 0, nextTime.Minute())
+		require.Equal(t, 0, nextTime.Second())
+	}
+}
+
+func TestDayTimeScheduleAfter(t *testing.T) {
+	s := NewDayTimeSchedule([]time.Weekday{
+		time.Wednesday,
+		time.Thursday,
+		time.Friday,
+	}, 15, 0, 0)
+
+	cases := []struct {
+		now     time.Time
+		nextDay time.Weekday
+	}{
+		{
+			time.Date(2016, time.October, 3, 16, 0, 0, 0, time.Local), // monday
+			time.Wednesday,
+		},
+		{
+			time.Date(2016, time.October, 4, 16, 0, 0, 0, time.Local),
+			time.Wednesday,
+		},
+		{
+			time.Date(2016, time.October, 5, 16, 0, 0, 0, time.Local),
+			time.Wednesday,
+		},
+		{
+			time.Date(2016, time.October, 6, 16, 0, 0, 0, time.Local),
+			time.Thursday,
+		},
+		{
+			time.Date(2016, time.October, 7, 16, 0, 0, 0, time.Local),
+			time.Friday,
+		},
+		{
+			time.Date(2016, time.October, 8, 16, 0, 0, 0, time.Local),
+			time.Wednesday,
+		},
+		{
+			time.Date(2016, time.October, 9, 16, 0, 0, 0, time.Local),
+			time.Wednesday,
+		},
+	}
+
+	for i, c := range cases {
+		nextTime := s.Next(c.now)
+		require.Equal(t, c.nextDay, nextTime.Weekday(), fmt.Sprint(i))
 		require.Equal(t, 15, nextTime.Hour())
 		require.Equal(t, 0, nextTime.Minute())
 		require.Equal(t, 0, nextTime.Second())

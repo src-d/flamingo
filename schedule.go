@@ -83,7 +83,8 @@ func (s *dayTimeSchedule) Next(now time.Time) time.Time {
 
 	for {
 		if _, ok := s.days[now.Weekday()]; ok {
-			return s.timeSchedule.Next(now)
+			t := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+			return s.timeSchedule.Next(t)
 		}
 
 		now = now.Add(24 * time.Hour)
