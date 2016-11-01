@@ -241,7 +241,6 @@ func (c *botConversation) stop() {
 	c.shutdown <- struct{}{}
 	close(c.shutdown)
 	<-c.closed
-	close(c.closed)
 	close(c.actions)
 	close(c.messages)
 }
