@@ -56,8 +56,8 @@ func (s *timeSchedule) Next(now time.Time) time.Time {
 }
 
 type dayTimeSchedule struct {
-	days         map[time.Weekday]struct{}
-	timeSchedule ScheduleTime
+	days                   map[time.Weekday]struct{}
+	hour, minutes, seconds int
 }
 
 // NewDayTimeSchedule creates a ScheduleTime that runs once a day at a given
@@ -70,7 +70,7 @@ func NewDayTimeSchedule(days []time.Weekday, hour, minutes, seconds int) Schedul
 
 	return &dayTimeSchedule{
 		daySet,
-		NewTimeSchedule(hour, minutes, seconds),
+		hour, minutes, seconds,
 	}
 }
 
@@ -81,12 +81,25 @@ func (s *dayTimeSchedule) Next(now time.Time) time.Time {
 		return zero
 	}
 
+	var t = now
 	for {
-		if _, ok := s.days[now.Weekday()]; ok {
-			t := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-			return s.timeSchedule.Next(t)
+		if _, ok := s.days[t.Weekday()]; ok {
+			d := time.Date(
+				t.Year(),
+				t.Month(),
+				t.Day(),
+				s.hour,
+				s.minutes,
+				s.seconds,
+				0,
+				t.Location(),
+			)
+
+			if d.After(now) {
+				return d
+			}
 		}
 
-		now = now.Add(24 * time.Hour)
+		t = t.Add(24 * time.Hour)
 	}
 }

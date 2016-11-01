@@ -100,15 +100,15 @@ func TestDayTimeScheduleAfter(t *testing.T) {
 		},
 		{
 			time.Date(2016, time.October, 5, 16, 0, 0, 0, time.Local),
-			time.Wednesday,
-		},
-		{
-			time.Date(2016, time.October, 6, 16, 0, 0, 0, time.Local),
 			time.Thursday,
 		},
 		{
-			time.Date(2016, time.October, 7, 16, 0, 0, 0, time.Local),
+			time.Date(2016, time.October, 6, 16, 0, 0, 0, time.Local),
 			time.Friday,
+		},
+		{
+			time.Date(2016, time.October, 7, 16, 0, 0, 0, time.Local),
+			time.Wednesday,
 		},
 		{
 			time.Date(2016, time.October, 8, 16, 0, 0, 0, time.Local),
